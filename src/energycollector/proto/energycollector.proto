@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package energycollector;
+
+service EnergyCollector {
+  rpc CollectEnergy (EnergyRequest) returns (EnergyResponse);
+}
+
+message EnergyRequest {
+  string source = 1;
+}
+
+message EnergyResponse {
+  string message = 1;
+}
