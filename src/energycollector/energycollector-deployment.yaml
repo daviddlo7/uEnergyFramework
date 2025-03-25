@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: energycollector-container
-        image: energycollector-grpc-server:latest 
+        image: energycollector-grpc-server:v1 
         ports:
           - containerPort: 50051 
           - containerPort: 8000 

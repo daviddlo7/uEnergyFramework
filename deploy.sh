@@ -1,12 +1,11 @@
 #!/bin/bash
 
-# Build the Docker image for EnergyCollector
+# Build Docker images for all services
 echo "Building Docker image for EnergyCollector..."
-docker build -t energycollector-grpc-server ./src/energycollector/
+docker build -t energycollector-grpc-server:v1 ./src/energycollector/
 
-# Apply Kubernetes manifests for EnergyCollector
+# Apply Kubernetes manifests for all services
 echo "Applying Kubernetes manifests for EnergyCollector..."
-kubectl apply -f ./k8s/energycollector-deployment.yaml
-kubectl apply -f ./k8s/energycollector-service-grpc.yaml
+kubectl apply -f ./src/energycollector/energycollector-deployment.yaml
 
-echo "EnergyCollector deployment completed."
+echo "All services deployed successfully."
