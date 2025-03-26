@@ -1,8 +1,8 @@
 import grpc, logging
 from common.Settings import get_service_host, get_service_port_grpc
 from common.Constants import ServiceNameEnum
-from proto.energycollector_pb2 import EnergyRequest
-from proto.energycollector_pb2_grpc import EnergyCollectorStub
+from energycollector_pb2 import EnergyRequest
+from energycollector_pb2_grpc import EnergyCollectorStub
 
 LOGGER = logging.getLogger(__name__)
 
@@ -39,15 +39,18 @@ class EnergyCollectorClient:
             self.channel = None
             self.stub = None
 
-    def collect_energy(self, source: str) -> str:
+    def run_test(self, device: str) -> str:
         """
-        Call the CollectEnergy method on the gRPC server.
-        
-        :param source: The energy source (e.g., "Solar Panel").
-        :return: The server's response message.
+        Call the RunTest method on the gRPC server.
+        :param device: The device to test (e.g., "HuaweiHL5").
+        :return: "Test Started" if successful, or "Error" if something fails.
         """
-        LOGGER.debug(f"CollectEnergy request: {source}")
-        request = EnergyRequest(source=source)
-        response = self.stub.CollectEnergy(request)
-        LOGGER.debug(f"CollectEnergy result: {response.message}")
-        return response.message
+        try:
+            LOGGER.debug(f"RunTest request: {device}")
+            request = TestRequest(device=device)
+            response = self.stub.RunTest(request)
+            LOGGER.debug(f"RunTest result: {response.message}")
+            return response.message
+        except Exception as e:
+            LOGGER.error(f"An error occurred while running the test: {e}")
+            return "Error"
