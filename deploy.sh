@@ -37,5 +37,5 @@ microk8s kubectl apply -f ./src/energycollector/energycollector-deployment.yaml
 echo "Applying Kubernetes manifests for Web..."
 microk8s kubectl apply -f ./src/webui/DeploymentWeb.yaml
 
-
 echo "Deployment completed successfully."
+
