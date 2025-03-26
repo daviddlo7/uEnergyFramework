@@ -23,3 +23,4 @@ microk8s kubectl apply -f ./src/webui/DeploymentWeb.yaml
  
  
 echo "Deployment completed successfully."
+
