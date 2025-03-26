@@ -1,1 +1,3 @@
 *.tar
+energycollector_pb2_grpc.py
+energycollector_pb2.py

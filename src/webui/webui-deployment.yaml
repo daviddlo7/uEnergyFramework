@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webui-deployment
+spec:
+  replicas: 1  
+  selector:
+    matchLabels:
+      app: webui
+  template:
+    metadata:
+      labels:
+        app: webui
+    spec:
+      containers:
+      - name: webui-container
+        image: webui:v1
+        ports:
+        - containerPort: 80
+        - containerPort: 50051
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webui-external-service
+spec:
+  type: LoadBalancer 
+  selector:
+    app: webui 
+  ports:
+  - protocol: TCP
+    port: 8085
+    targetPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webui-service
+spec:
+  type: ClusterIP
+  selector:
+    app: webui
+  ports:
+  - name: grpc
+    protocol: TCP
+    port: 50051
+    targetPort: 50051
