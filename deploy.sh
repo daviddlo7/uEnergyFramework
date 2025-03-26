@@ -21,6 +21,5 @@ microk8s ctr image import website-v1.tar
 echo "Applying Kubernetes manifests for Web..."
 microk8s kubectl apply -f ./src/webui/DeploymentWeb.yaml
  
- 
 echo "Deployment completed successfully."
 
