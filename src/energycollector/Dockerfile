@@ -1,10 +1,11 @@
 FROM python:3.9-slim
 
-WORKDIR /app
+WORKDIR /app/src/energycollector
 
 # Install dependencies listed in requirements.in
 COPY requirements.in .
 RUN pip install -r requirements.in
+RUN pip install protobuf==3.20.3
 
 # Copy all source code into the container
 COPY . .
@@ -13,4 +14,4 @@ COPY . .
 EXPOSE 50051 8000
 
 # Run the main application when the container starts
-CMD ["python", "main.py"]
+ENTRYPOINT ["python", "-m", "service.__main__"]

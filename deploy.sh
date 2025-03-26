@@ -1,11 +1,31 @@
 #!/bin/bash
 
-# Build Docker images for all services
+# Activating DNS
+microk8s enable dns
+
+# Generate gRPC files from the .proto definition
+echo "Generating gRPC files..."
+python3 -m grpc_tools.protoc \
+    -I./src/energycollector/proto \
+    --python_out=./src/energycollector/proto \
+    --grpc_python_out=./src/energycollector/proto \
+    ./src/energycollector/proto/energycollector.proto
+
+# Build the Docker image for EnergyCollector
 echo "Building Docker image for EnergyCollector..."
-docker build -t energycollector-grpc-server:v1 ./src/energycollector/
+docker build -t energycollector:v1 ./src/energycollector/
 
-# Apply Kubernetes manifests for all services
+# Export the image to a tar file for MicroK8s
+echo "Exporting Docker image to tar file..."
+docker save energycollector:v1 -o energycollector-v1.tar
+
+# Import the image into MicroK8s
+echo "Importing image into MicroK8s..."
+microk8s ctr image import energycollector-v1.tar
+
+# Apply Kubernetes manifests for EnergyCollector in MicroK8s
 echo "Applying Kubernetes manifests for EnergyCollector..."
-kubectl apply -f ./src/energycollector/energycollector-deployment.yaml
+microk8s kubectl apply -f ./src/energycollector/energycollector-deployment.yaml
 
-echo "All services deployed successfully."
+
+echo "Deployment completed successfully."
