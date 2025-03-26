@@ -10,7 +10,6 @@ python3 -m grpc_tools.protoc \
     ./src/energycollector/proto/energycollector.proto
 
 # Build the Docker image for EnergyCollector
-<<<<<<< HEAD
 echo "Building Docker image for EnergyCollector..."
 docker build -t energycollector:v1 ./src/energycollector/
 
