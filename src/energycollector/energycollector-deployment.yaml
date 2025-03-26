@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
       - name: energycollector-container
-        image: energycollector-grpc-server:latest 
+        image: energycollector:v1
+        imagePullPolicy: Never
         ports:
           - containerPort: 50051 
           - containerPort: 8000 
@@ -24,7 +25,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: energycollector-service-grpc
+  name: energycollector-service
 spec:
   type: ClusterIP 
   selector:
