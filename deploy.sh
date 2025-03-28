@@ -4,6 +4,7 @@
 microk8s enable dns
 microk8s enable storage
 microk8s enable ingress
+microk8s enable metallb:192.168.1.200-192.168.1.220
 
 # Generar archivos gRPC para todos los módulos
 echo "Generando archivos gRPC para EnergyCollector..."
