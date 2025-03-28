@@ -19,7 +19,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             analytics_response = self.call_analytics_service(request.device)
 
             # Combine responses from EnergyCollector and Analytics services
-            message = f"Test Started. Analytics Response: {analytics_response}"
+            message = f"Test Started!. Analytics Response: {analytics_response}"
             return TestResponse(message=message)
 
         except Exception as e:
