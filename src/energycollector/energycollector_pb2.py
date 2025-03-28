@@ -19,22 +19,22 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x15\x65nergycollector.proto\x12\x0f\x65nergycollector\"\x1f\n\rEnergyRequest\x12\x0e\n\x06source\x18\x01 \x01(\t\"!\n\x0e\x45nergyResponse\x12\x0f\n\x07message\x18\x01 \x01(\t2c\n\x0f\x45nergyCollector\x12P\n\rCollectEnergy\x12\x1e.energycollector.EnergyRequest\x1a\x1f.energycollector.EnergyResponseb\x06proto3'
+  serialized_pb=b'\n\x15\x65nergycollector.proto\x12\x0f\x65nergycollector\"\x1d\n\x0bTestRequest\x12\x0e\n\x06\x64\x65vice\x18\x01 \x01(\t\"\x1f\n\x0cTestResponse\x12\x0f\n\x07message\x18\x01 \x01(\t2Y\n\x0f\x45nergyCollector\x12\x46\n\x07RunTest\x12\x1c.energycollector.TestRequest\x1a\x1d.energycollector.TestResponseb\x06proto3'
 )
 
 
 
 
-_ENERGYREQUEST = _descriptor.Descriptor(
-  name='EnergyRequest',
-  full_name='energycollector.EnergyRequest',
+_TESTREQUEST = _descriptor.Descriptor(
+  name='TestRequest',
+  full_name='energycollector.TestRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='source', full_name='energycollector.EnergyRequest.source', index=0,
+      name='device', full_name='energycollector.TestRequest.device', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -53,20 +53,20 @@ _ENERGYREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=42,
-  serialized_end=73,
+  serialized_end=71,
 )
 
 
-_ENERGYRESPONSE = _descriptor.Descriptor(
-  name='EnergyResponse',
-  full_name='energycollector.EnergyResponse',
+_TESTRESPONSE = _descriptor.Descriptor(
+  name='TestResponse',
+  full_name='energycollector.TestResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='message', full_name='energycollector.EnergyResponse.message', index=0,
+      name='message', full_name='energycollector.TestResponse.message', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -84,27 +84,27 @@ _ENERGYRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=75,
-  serialized_end=108,
+  serialized_start=73,
+  serialized_end=104,
 )
 
-DESCRIPTOR.message_types_by_name['EnergyRequest'] = _ENERGYREQUEST
-DESCRIPTOR.message_types_by_name['EnergyResponse'] = _ENERGYRESPONSE
+DESCRIPTOR.message_types_by_name['TestRequest'] = _TESTREQUEST
+DESCRIPTOR.message_types_by_name['TestResponse'] = _TESTRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-EnergyRequest = _reflection.GeneratedProtocolMessageType('EnergyRequest', (_message.Message,), {
-  'DESCRIPTOR' : _ENERGYREQUEST,
+TestRequest = _reflection.GeneratedProtocolMessageType('TestRequest', (_message.Message,), {
+  'DESCRIPTOR' : _TESTREQUEST,
   '__module__' : 'energycollector_pb2'
-  # @@protoc_insertion_point(class_scope:energycollector.EnergyRequest)
+  # @@protoc_insertion_point(class_scope:energycollector.TestRequest)
   })
-_sym_db.RegisterMessage(EnergyRequest)
+_sym_db.RegisterMessage(TestRequest)
 
-EnergyResponse = _reflection.GeneratedProtocolMessageType('EnergyResponse', (_message.Message,), {
-  'DESCRIPTOR' : _ENERGYRESPONSE,
+TestResponse = _reflection.GeneratedProtocolMessageType('TestResponse', (_message.Message,), {
+  'DESCRIPTOR' : _TESTRESPONSE,
   '__module__' : 'energycollector_pb2'
-  # @@protoc_insertion_point(class_scope:energycollector.EnergyResponse)
+  # @@protoc_insertion_point(class_scope:energycollector.TestResponse)
   })
-_sym_db.RegisterMessage(EnergyResponse)
+_sym_db.RegisterMessage(TestResponse)
 
 
 
@@ -115,16 +115,16 @@ _ENERGYCOLLECTOR = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=110,
-  serialized_end=209,
+  serialized_start=106,
+  serialized_end=195,
   methods=[
   _descriptor.MethodDescriptor(
-    name='CollectEnergy',
-    full_name='energycollector.EnergyCollector.CollectEnergy',
+    name='RunTest',
+    full_name='energycollector.EnergyCollector.RunTest',
     index=0,
     containing_service=None,
-    input_type=_ENERGYREQUEST,
-    output_type=_ENERGYRESPONSE,
+    input_type=_TESTREQUEST,
+    output_type=_TESTRESPONSE,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),

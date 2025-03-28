@@ -1,3 +1,8 @@
 *.tar
 energycollector_pb2_grpc.py
 energycollector_pb2.py
+webui_pb2_grpc.py
+webui_pb2.py
+analytics_pb2_grpc.py
+analytics_pb2.py
+.docker_temp_*

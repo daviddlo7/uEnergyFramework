@@ -2,7 +2,7 @@ kubectl delete all --all --all-namespaces
 
 microk8s ctr images ls -q | xargs -r microk8s ctr image remove
 
-docker rm $(docker ps -a -q)
+docker rm -f $(docker ps -a -q)
 
 docker rmi -f $(docker images -a -q)
 

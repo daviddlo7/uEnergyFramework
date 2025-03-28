@@ -14,17 +14,17 @@ class EnergyCollectorStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.CollectEnergy = channel.unary_unary(
-                '/energycollector.EnergyCollector/CollectEnergy',
-                request_serializer=energycollector__pb2.EnergyRequest.SerializeToString,
-                response_deserializer=energycollector__pb2.EnergyResponse.FromString,
+        self.RunTest = channel.unary_unary(
+                '/energycollector.EnergyCollector/RunTest',
+                request_serializer=energycollector__pb2.TestRequest.SerializeToString,
+                response_deserializer=energycollector__pb2.TestResponse.FromString,
                 )
 
 
 class EnergyCollectorServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def CollectEnergy(self, request, context):
+    def RunTest(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -33,10 +33,10 @@ class EnergyCollectorServicer(object):
 
 def add_EnergyCollectorServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'CollectEnergy': grpc.unary_unary_rpc_method_handler(
-                    servicer.CollectEnergy,
-                    request_deserializer=energycollector__pb2.EnergyRequest.FromString,
-                    response_serializer=energycollector__pb2.EnergyResponse.SerializeToString,
+            'RunTest': grpc.unary_unary_rpc_method_handler(
+                    servicer.RunTest,
+                    request_deserializer=energycollector__pb2.TestRequest.FromString,
+                    response_serializer=energycollector__pb2.TestResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -49,7 +49,7 @@ class EnergyCollector(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def CollectEnergy(request,
+    def RunTest(request,
             target,
             options=(),
             channel_credentials=None,
@@ -59,8 +59,8 @@ class EnergyCollector(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/energycollector.EnergyCollector/CollectEnergy',
-            energycollector__pb2.EnergyRequest.SerializeToString,
-            energycollector__pb2.EnergyResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/energycollector.EnergyCollector/RunTest',
+            energycollector__pb2.TestRequest.SerializeToString,
+            energycollector__pb2.TestResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

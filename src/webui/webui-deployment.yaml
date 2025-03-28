@@ -40,6 +40,7 @@ metadata:
   name: webui-service
 spec:
   type: ClusterIP
+  clusterIP: 10.152.183.11
   selector:
     app: webui
   ports:

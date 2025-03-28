@@ -28,8 +28,9 @@ metadata:
   name: energycollector-service
 spec:
   type: ClusterIP 
+  clusterIP: 10.152.183.12
   selector:
     app: energycollector
   ports:
   - port: 50051       
-    targetPort: 50051 
+    targetPort: 50051

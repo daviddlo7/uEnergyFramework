@@ -1,13 +1,16 @@
 FROM python:3.9-slim
 
-WORKDIR /app/src/energycollector
+WORKDIR /app/src
 
-COPY requirements.in .
+COPY src/energycollector/requirements.in .
 RUN pip install -r requirements.in
 
-COPY . .
+COPY src/energycollector/ .
 
-EXPOSE 50051 8000
+COPY src/analytics/analytics_pb2.py /app/src/
+COPY src/analytics/analytics_pb2_grpc.py /app/src/
+
+EXPOSE 50051
 
 ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 
