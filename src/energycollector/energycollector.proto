@@ -2,14 +2,14 @@ syntax = "proto3";
 
 package energycollector;
 
-message EnergyRequest {
-  string source = 1;
-}
-
-message EnergyResponse {
-  string message = 1;
-}
-
 service EnergyCollector {
-  rpc CollectEnergy(EnergyRequest) returns (EnergyResponse);
+  rpc RunTest (TestRequest) returns (TestResponse);
+}
+
+message TestRequest {
+  string device = 1;
+}
+
+message TestResponse {
+  string message = 1;
 }

@@ -2,10 +2,10 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import energycollector_pb2 as energycollector__pb2
+import analytics_pb2 as analytics__pb2
 
 
-class EnergyCollectorStub(object):
+class AnalyticsStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -14,42 +14,42 @@ class EnergyCollectorStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.RunTest = channel.unary_unary(
-                '/energycollector.EnergyCollector/RunTest',
-                request_serializer=energycollector__pb2.TestRequest.SerializeToString,
-                response_deserializer=energycollector__pb2.TestResponse.FromString,
+        self.RunAnalytics = channel.unary_unary(
+                '/analytics.Analytics/RunAnalytics',
+                request_serializer=analytics__pb2.AnalyticsRequest.SerializeToString,
+                response_deserializer=analytics__pb2.AnalyticsResponse.FromString,
                 )
 
 
-class EnergyCollectorServicer(object):
+class AnalyticsServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def RunTest(self, request, context):
+    def RunAnalytics(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
 
-def add_EnergyCollectorServicer_to_server(servicer, server):
+def add_AnalyticsServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'RunTest': grpc.unary_unary_rpc_method_handler(
-                    servicer.RunTest,
-                    request_deserializer=energycollector__pb2.TestRequest.FromString,
-                    response_serializer=energycollector__pb2.TestResponse.SerializeToString,
+            'RunAnalytics': grpc.unary_unary_rpc_method_handler(
+                    servicer.RunAnalytics,
+                    request_deserializer=analytics__pb2.AnalyticsRequest.FromString,
+                    response_serializer=analytics__pb2.AnalyticsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'energycollector.EnergyCollector', rpc_method_handlers)
+            'analytics.Analytics', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
  # This class is part of an EXPERIMENTAL API.
-class EnergyCollector(object):
+class Analytics(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def RunTest(request,
+    def RunAnalytics(request,
             target,
             options=(),
             channel_credentials=None,
@@ -59,8 +59,8 @@ class EnergyCollector(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/energycollector.EnergyCollector/RunTest',
-            energycollector__pb2.TestRequest.SerializeToString,
-            energycollector__pb2.TestResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/analytics.Analytics/RunAnalytics',
+            analytics__pb2.AnalyticsRequest.SerializeToString,
+            analytics__pb2.AnalyticsResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

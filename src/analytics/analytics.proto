@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package analytics;
+
+message AnalyticsRequest {
+  string name = 1;
+}
+
+message AnalyticsResponse {
+  string message = 1;
+}
+
+service Analytics {
+  rpc RunAnalytics (AnalyticsRequest) returns (AnalyticsResponse);
+}

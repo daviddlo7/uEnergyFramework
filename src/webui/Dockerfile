@@ -1,3 +1,5 @@
 FROM nginx:latest
-ADD web /usr/share/nginx/html/
 
+WORKDIR /app/src
+
+ADD src/webui/web /usr/share/nginx/html/
