@@ -23,7 +23,7 @@ class WebUIService:
         """
         Initializes the gRPC server and the service implementation.
         """
-        self.port = os.getenv("GRPC_PORT", "50052")  # Default port for WebUI service
+        self.port = os.getenv("GRPC_PORT", "50051")  # Default port for WebUI service
         self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=GRPC_MAX_WORKERS))
         self.servicer = WebUIServicerImpl()  # Service implementation
 

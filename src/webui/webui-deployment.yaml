@@ -13,10 +13,13 @@ spec:
         app: webui
     spec:
       containers:
-      - name: webui-container
-        image: webui:v1
+      - name: nginx-container
+        image: webui-nginx:v1
         ports:
         - containerPort: 80
+      - name: grpc-container
+        image: webui-grpc:v1
+        ports:
         - containerPort: 50051
 
 ---
