@@ -1,71 +1,76 @@
 #!/bin/bash
 
-# Activar complementos esenciales en MicroK8s
+# Enable essential addons in MicroK8s
 microk8s enable dns
 microk8s enable storage
 microk8s enable ingress
-microk8s enable metallb:192.168.1.200-192.168.1.220
 
-# Generar archivos gRPC para todos los módulos
-echo "Generando archivos gRPC para EnergyCollector..."
+# Generate gRPC files for all modules
+echo "Generating gRPC files for EnergyCollector..."
 python3 -m grpc_tools.protoc \
 -I./src/energycollector \
 --python_out=./src/energycollector \
 --grpc_python_out=./src/energycollector \
 ./src/energycollector/energycollector.proto
 
-echo "Generando archivos gRPC para Analytics..."
+echo "Generating gRPC files for Analytics..."
 python3 -m grpc_tools.protoc \
 -I./src/analytics \
 --python_out=./src/analytics \
 --grpc_python_out=./src/analytics \
 ./src/analytics/analytics.proto
 
-echo "Generando archivos gRPC para WebUI..."
+echo "Generating gRPC files for WebUI..."
 python3 -m grpc_tools.protoc \
 -I./src/webui \
 --python_out=./src/webui \
 --grpc_python_out=./src/webui \
 ./src/webui/webui.proto
 
-# Construir imágenes Docker para todos los módulos
-echo "Construyendo imagen Docker para EnergyCollector..."
+# Build Docker images for all modules (using static tags)
+echo "Building Docker image for EnergyCollector..."
 docker build -t energycollector:v1 -f ./src/energycollector/Dockerfile .
 
-echo "Construyendo imagen Docker para Analytics..."
+echo "Building Docker image for Analytics..."
 docker build -t analytics:v1 -f ./src/analytics/Dockerfile .
 
-echo "Construyendo imagen Docker para WebUI..."
+echo "Building Docker image for WebUI..."
 docker build -t webui:v1 -f ./src/webui/Dockerfile .
 
-# Exportar imágenes Docker a archivos tar para MicroK8s
-echo "Exportando imagen Docker de EnergyCollector a archivo tar..."
+# Export Docker images to tar files for MicroK8s
+echo "Exporting Docker image for EnergyCollector to tar file..."
 docker save energycollector:v1 -o energycollector-v1.tar
 
-echo "Exportando imagen Docker de Analytics a archivo tar..."
+echo "Exporting Docker image for Analytics to tar file..."
 docker save analytics:v1 -o analytics-v1.tar
 
-echo "Exportando imagen Docker de WebUI a archivo tar..."
+echo "Exporting Docker image for WebUI to tar file..."
 docker save webui:v1 -o webui-v1.tar
 
-# Importar las imágenes en MicroK8s
-echo "Importando imagen de EnergyCollector en MicroK8s..."
+# Import images into MicroK8s
+echo "Importing EnergyCollector image into MicroK8s..."
 microk8s ctr image import energycollector-v1.tar
 
-echo "Importando imagen de Analytics en MicroK8s..."
+echo "Importing Analytics image into MicroK8s..."
 microk8s ctr image import analytics-v1.tar
 
-echo "Importando imagen de WebUI en MicroK8s..."
+echo "Importing WebUI image into MicroK8s..."
 microk8s ctr image import webui-v1.tar
 
-# Aplicar los manifiestos de Kubernetes para todos los módulos
-echo "Aplicando manifiestos de Kubernetes para EnergyCollector..."
+# Apply Kubernetes manifests for all modules
+echo "Applying Kubernetes manifests for EnergyCollector..."
 microk8s kubectl apply -f ./src/energycollector/energycollector-deployment.yaml
 
-echo "Aplicando manifiestos de Kubernetes para Analytics..."
+echo "Applying Kubernetes manifests for Analytics..."
 microk8s kubectl apply -f ./src/analytics/analytics-deployment.yaml
 
-echo "Aplicando manifiestos de Kubernetes para WebUI..."
+echo "Applying Kubernetes manifests for WebUI..."
 microk8s kubectl apply -f ./src/webui/webui-deployment.yaml
 
-echo "Despliegue completado exitosamente."
+# Force a restart of the deployments to ensure changes take effect
+echo "Restarting deployments to apply changes..."
+microk8s kubectl rollout restart deployment energycollector-deployment
+microk8s kubectl rollout restart deployment analytics-deployment
+microk8s kubectl rollout restart deployment webui-deployment
+
+echo "Deployment completed successfully."
