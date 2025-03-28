@@ -28,6 +28,7 @@ metadata:
   namespace: uenergyframework
 spec:
   type: ClusterIP
+  clusterIP: 10.152.183.13
   selector:
     app: analytics
   ports:

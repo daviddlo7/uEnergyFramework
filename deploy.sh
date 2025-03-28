@@ -38,8 +38,11 @@ docker build -t energycollector:v1 -f ./src/energycollector/Dockerfile .
 echo "Building Docker image for Analytics..."
 docker build -t analytics:v1 -f ./src/analytics/Dockerfile .
 
-echo "Building Docker image for WebUI..."
-docker build -t webui:v1 -f ./src/webui/Dockerfile .
+echo "Building Docker image for WebUI (gRPC)..."
+docker build -t webui-grpc:v1 -f ./src/webui/Dockerfile.grpc .
+
+echo "Building Docker image for WebUI (Nginx)..."
+docker build -t webui-nginx:v1 -f ./src/webui/Dockerfile.nginx .
 
 # Export Docker images to tar files for MicroK8s
 echo "Exporting Docker image for EnergyCollector to tar file..."
@@ -48,8 +51,11 @@ docker save energycollector:v1 -o energycollector-v1.tar
 echo "Exporting Docker image for Analytics to tar file..."
 docker save analytics:v1 -o analytics-v1.tar
 
-echo "Exporting Docker image for WebUI to tar file..."
-docker save webui:v1 -o webui-v1.tar
+echo "Exporting Docker image for WebUI (gRPC) to tar file..."
+docker save webui-grpc:v1 -o webui-grpc-v1.tar
+
+echo "Exporting Docker image for WebUI (Nginx) to tar file..."
+docker save webui-nginx:v1 -o webui-nginx-v1.tar
 
 # Import images into MicroK8s
 echo "Importing EnergyCollector image into MicroK8s..."
@@ -58,8 +64,11 @@ microk8s ctr image import energycollector-v1.tar
 echo "Importing Analytics image into MicroK8s..."
 microk8s ctr image import analytics-v1.tar
 
-echo "Importing WebUI image into MicroK8s..."
-microk8s ctr image import webui-v1.tar
+echo "Importing WebUI (gRPC) image into MicroK8s..."
+microk8s ctr image import webui-grpc-v1.tar
+
+echo "Importing WebUI (Nginx) image into MicroK8s..."
+microk8s ctr image import webui-nginx-v1.tar
 
 # Apply Kubernetes manifests for all modules in the namespace uenergyframework
 echo "Applying Kubernetes manifests for EnergyCollector..."

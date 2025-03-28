@@ -1,0 +1,14 @@
+FROM python:3.9-slim
+
+WORKDIR /app/src
+
+COPY src/webui/requirements.in .
+RUN pip install -r requirements.in
+
+COPY src/webui/ .
+
+EXPOSE 50051
+
+ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+ENTRYPOINT ["python", "-m", "service.__main__"]

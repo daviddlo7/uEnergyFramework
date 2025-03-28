@@ -27,7 +27,8 @@ metadata:
   name: energycollector-service
   namespace: uenergyframework
 spec:
-  type: ClusterIP 
+  type: ClusterIP
+  clusterIP: 10.152.183.12
   selector:
     app: energycollector
   ports:
