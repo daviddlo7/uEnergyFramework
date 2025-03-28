@@ -44,6 +44,9 @@ docker build -t webui-grpc:v1 -f ./src/webui/Dockerfile.grpc .
 echo "Building Docker image for WebUI (Nginx)..."
 docker build -t webui-nginx:v1 -f ./src/webui/Dockerfile.nginx .
 
+echo "Building Docker image for WebUI (Backend)..."
+docker build -t webui-backend:v1 -f ./src/webui/backend/Dockerfile .
+
 # Export Docker images to tar files for MicroK8s
 echo "Exporting Docker image for EnergyCollector to tar file..."
 docker save energycollector:v1 -o energycollector-v1.tar
@@ -57,6 +60,9 @@ docker save webui-grpc:v1 -o webui-grpc-v1.tar
 echo "Exporting Docker image for WebUI (Nginx) to tar file..."
 docker save webui-nginx:v1 -o webui-nginx-v1.tar
 
+echo "Exporting Docker image for WebUI (Backend) to tar file..."
+docker save webui-backend:v1 -o webui-backend-v1.tar
+
 # Import images into MicroK8s
 echo "Importing EnergyCollector image into MicroK8s..."
 microk8s ctr image import energycollector-v1.tar
@@ -69,6 +75,9 @@ microk8s ctr image import webui-grpc-v1.tar
 
 echo "Importing WebUI (Nginx) image into MicroK8s..."
 microk8s ctr image import webui-nginx-v1.tar
+
+echo "Importing WebUI (Backend) image into MicroK8s..."
+microk8s ctr image import webui-backend-v1.tar
 
 # Apply Kubernetes manifests for all modules in the namespace uenergyframework
 echo "Applying Kubernetes manifests for EnergyCollector..."
