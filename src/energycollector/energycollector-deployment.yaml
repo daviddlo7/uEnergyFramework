@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: energycollector-deployment
+  namespace: uenergyframework
 spec:
   replicas: 1 
   selector:
@@ -19,16 +20,14 @@ spec:
         ports:
           - containerPort: 50051 
           - containerPort: 8000 
-
-
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: energycollector-service
+  namespace: uenergyframework
 spec:
   type: ClusterIP 
-  clusterIP: 10.152.183.12
   selector:
     app: energycollector
   ports:

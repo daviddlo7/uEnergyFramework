@@ -5,6 +5,10 @@ microk8s enable dns
 microk8s enable storage
 microk8s enable ingress
 
+# Apply the namespace configuration
+echo "Applying namespace configuration..."
+kubectl apply -f namespace.yaml
+
 # Generate gRPC files for all modules
 echo "Generating gRPC files for EnergyCollector..."
 python3 -m grpc_tools.protoc \
@@ -57,20 +61,20 @@ microk8s ctr image import analytics-v1.tar
 echo "Importing WebUI image into MicroK8s..."
 microk8s ctr image import webui-v1.tar
 
-# Apply Kubernetes manifests for all modules
+# Apply Kubernetes manifests for all modules in the namespace uenergyframework
 echo "Applying Kubernetes manifests for EnergyCollector..."
-microk8s kubectl apply -f ./src/energycollector/energycollector-deployment.yaml
+microk8s kubectl apply -f ./src/energycollector/energycollector-deployment.yaml -n uenergyframework
 
 echo "Applying Kubernetes manifests for Analytics..."
-microk8s kubectl apply -f ./src/analytics/analytics-deployment.yaml
+microk8s kubectl apply -f ./src/analytics/analytics-deployment.yaml -n uenergyframework
 
 echo "Applying Kubernetes manifests for WebUI..."
-microk8s kubectl apply -f ./src/webui/webui-deployment.yaml
+microk8s kubectl apply -f ./src/webui/webui-deployment.yaml -n uenergyframework
 
-# Force a restart of the deployments to ensure changes take effect
+# Force a restart of the deployments to ensure changes take effect in the namespace uenergyframework
 echo "Restarting deployments to apply changes..."
-microk8s kubectl rollout restart deployment energycollector-deployment
-microk8s kubectl rollout restart deployment analytics-deployment
-microk8s kubectl rollout restart deployment webui-deployment
+microk8s kubectl rollout restart deployment energycollector-deployment -n uenergyframework
+microk8s kubectl rollout restart deployment analytics-deployment -n uenergyframework
+microk8s kubectl rollout restart deployment webui-deployment -n uenergyframework
 
 echo "Deployment completed successfully."
