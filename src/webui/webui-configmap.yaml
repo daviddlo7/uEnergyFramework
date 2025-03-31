@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: uenergyframework
+data:
+  nginx.conf: |
+    worker_processes  1;
+    events {}
+    http {
+        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                        '$status $body_bytes_sent "$http_referer" '
+                        '"$http_user_agent" "$http_x_forwarded_for"';
+
+        access_log /var/log/nginx/access.log main;
+        error_log /var/log/nginx/error.log debug;
+        upstream grpc_backend {
+            server energycollector-service.uenergyframework.svc.cluster.local:50051; # DNS interno del servicio
+        }
+        server {
+            listen 80;
+            http2 on;
+            location /grpc {
+                grpc_pass grpc://grpc_backend;
+                error_page 502 = /error502.html; # Página personalizada para errores
+                grpc_set_header Host energycollector-service.uenergyframework.svc.cluster.local;
+                grpc_read_timeout 60s; # Tiempo máximo de espera para respuestas del backend
+                grpc_send_timeout 60s; # Tiempo máximo para enviar solicitudes al backend
+            }
+            location / {
+            root /usr/share/nginx/html; # Ruta donde están los archivos HTML
+            index index.html;           # Archivo predeterminado
+            try_files $uri $uri/ =404;  # Si no se encuentra el archivo, devuelve 404
+            }
+        }
+    }
