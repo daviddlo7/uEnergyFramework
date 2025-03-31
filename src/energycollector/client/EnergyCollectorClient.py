@@ -1,5 +1,4 @@
 import grpc
-import logging
 
 from common.Settings import get_service_host, get_service_port_grpc
 from common.Constants import ServiceNameEnum
@@ -7,7 +6,8 @@ from common.Constants import ServiceNameEnum
 from energycollector_pb2 import TestRequest
 from energycollector_pb2_grpc import EnergyCollectorStub
 
-LOGGER = logging.getLogger(__name__)
+import logging
+logger = logging.getLogger(__name__)
 
 class EnergyCollectorClient:
     def __init__(self, host=None, port=None):
@@ -17,11 +17,11 @@ class EnergyCollectorClient:
             port = get_service_port_grpc(ServiceNameEnum.ENERGY_COLLECTOR)
 
         self.endpoint = f"{host}:{port}"
-        LOGGER.debug(f"Creating channel to {self.endpoint}...")
+        logger.debug(f"Creating channel to {self.endpoint}...")
         self.channel = None
         self.stub = None
         self.connect()
-        LOGGER.debug("Channel created")
+        logger.debug("Channel created")
 
     def connect(self):
         self.channel = grpc.insecure_channel(self.endpoint)
@@ -35,11 +35,11 @@ class EnergyCollectorClient:
 
     def run_test(self, device: str) -> str:
         try:
-            LOGGER.debug(f"RunTest request: {device}")
+            logger.debug(f"RunTest request: {device}")
             request = TestRequest(device=device)
             response = self.stub.RunTest(request)
-            LOGGER.debug(f"RunTest result: {response.message}")
+            logger.debug(f"RunTest result: {response.message}")
             return response.message
         except Exception as e:
-            LOGGER.error(f"An error occurred while running the test: {e}")
+            logger.error(f"An error occurred while running the test: {e}")
             return "Error"

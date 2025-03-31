@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sudo apt install -y nodejs npm
+
 # Enable essential addons in MicroK8s
 microk8s enable dns
 microk8s enable storage
@@ -10,11 +12,10 @@ echo "Applying namespace configuration..."
 kubectl apply -f namespace.yaml
 
 # Generate gRPC files for all modules
-echo "Generating gRPC files for EnergyCollector..."
-python3 -m grpc_tools.protoc \
--I./src/energycollector \
---python_out=./src/energycollector \
---grpc_python_out=./src/energycollector \
+echo "Generating gRPC-Web files for EnergyCollector..."
+protoc -I./src/energycollector \
+--js_out=import_style=commonjs:./src/energycollector/generated \
+--grpc-web_out=import_style=commonjs,mode=grpcwebtext:./src/energycollector/generated \
 ./src/energycollector/energycollector.proto
 
 echo "Generating gRPC files for Analytics..."

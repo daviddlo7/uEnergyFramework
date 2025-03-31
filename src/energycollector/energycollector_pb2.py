@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x15\x65nergycollector.proto\x12\x0f\x65nergycollector\"\x1d\n\x0bTestRequest\x12\x0e\n\x06\x64\x65vice\x18\x01 \x01(\t\"\x1f\n\x0cTestResponse\x12\x0f\n\x07message\x18\x01 \x01(\t2Y\n\x0f\x45nergyCollector\x12\x46\n\x07RunTest\x12\x1c.energycollector.TestRequest\x1a\x1d.energycollector.TestResponseb\x06proto3'
+  serialized_pb=b'\n\x15\x65nergycollector.proto\x12\x0f\x65nergycollector\" \n\x0bTestRequest\x12\x11\n\ttest_data\x18\x01 \x01(\t\"\x1f\n\x0cTestResponse\x12\x0f\n\x07message\x18\x01 \x01(\t2Y\n\x0f\x45nergyCollector\x12\x46\n\x07RunTest\x12\x1c.energycollector.TestRequest\x1a\x1d.energycollector.TestResponseb\x06proto3'
 )
 
 
@@ -34,7 +34,7 @@ _TESTREQUEST = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='device', full_name='energycollector.TestRequest.device', index=0,
+      name='test_data', full_name='energycollector.TestRequest.test_data', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -53,7 +53,7 @@ _TESTREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=42,
-  serialized_end=71,
+  serialized_end=74,
 )
 
 
@@ -84,8 +84,8 @@ _TESTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=73,
-  serialized_end=104,
+  serialized_start=76,
+  serialized_end=107,
 )
 
 DESCRIPTOR.message_types_by_name['TestRequest'] = _TESTREQUEST
@@ -115,8 +115,8 @@ _ENERGYCOLLECTOR = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=106,
-  serialized_end=195,
+  serialized_start=109,
+  serialized_end=198,
   methods=[
   _descriptor.MethodDescriptor(
     name='RunTest',

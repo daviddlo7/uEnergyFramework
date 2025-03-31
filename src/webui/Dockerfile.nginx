@@ -3,3 +3,5 @@ FROM nginx:latest
 WORKDIR /app/src
 
 ADD src/webui/web /usr/share/nginx/html/
+
+COPY src/webui/nginx.conf /etc/nginx/nginx.conf

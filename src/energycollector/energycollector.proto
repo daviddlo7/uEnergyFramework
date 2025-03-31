@@ -7,7 +7,7 @@ service EnergyCollector {
 }
 
 message TestRequest {
-  string device = 1;
+  string test_data = 1;
 }
 
 message TestResponse {

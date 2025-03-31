@@ -6,30 +6,33 @@ import os
 
 from service.EnergyCollectorService import EnergyCollectorService
 
+import logging
+logger = logging.getLogger(__name__)
+
 terminate = threading.Event()
-LOGGER = None
+logger = None
 grpc_service = None  # Global variable for the gRPC service
 
 def signal_handler(signal, frame):  # pylint: disable=redefined-outer-name
     global grpc_service  # pylint: disable=global-statement
-    LOGGER.warning("Terminate signal received")
+    logger.warning("Terminate signal received")
     terminate.set()
     if grpc_service:
         grpc_service.stop()  # Detener el servidor gRPC
 
 def main():
-    global LOGGER, grpc_service  # pylint: disable=global-statement
+    global logger, grpc_service  # pylint: disable=global-statement
 
     logging.basicConfig(
         level=logging.INFO,
         format="[%(asctime)s] %(levelname)s:%(name)s:%(message)s",
     )
-    LOGGER = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    LOGGER.info("Starting EnergyCollector service...")
+    logger.info("Starting EnergyCollector service...")
 
     # Start gRPC service
     grpc_service = EnergyCollectorService()
@@ -39,7 +42,7 @@ def main():
     while not terminate.wait(timeout=1.0):
         pass
 
-    LOGGER.info("Terminating EnergyCollector service...")
+    logger.info("Terminating EnergyCollector service...")
     return 0
 
 if __name__ == "__main__":
