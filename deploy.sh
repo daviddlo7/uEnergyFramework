@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sudo apt install -y nodejs npm
+#sudo apt install -y nodejs npm
 
 # Enable essential addons in MicroK8s
 microk8s enable dns
@@ -14,8 +14,8 @@ kubectl apply -f namespace.yaml
 # Generate gRPC files for all modules
 echo "Generating gRPC-Web files for EnergyCollector..."
 protoc -I./src/energycollector \
---js_out=import_style=commonjs:./src/energycollector/generated \
---grpc-web_out=import_style=commonjs,mode=grpcwebtext:./src/energycollector/generated \
+--js_out=import_style=commonjs:./src/energycollector \
+--grpc-web_out=import_style=commonjs,mode=grpcwebtext:./src/energycollector \
 ./src/energycollector/energycollector.proto
 
 echo "Generating gRPC files for Analytics..."
@@ -73,9 +73,6 @@ microk8s ctr image import webui-grpc-v1.tar
 echo "Importing WebUI (Nginx) image into MicroK8s..."
 microk8s ctr image import webui-nginx-v1.tar
 
-echo "Applying Kubernetes manifests for WebUI..."
-microk8s kubectl apply -f ./src/webui/webui-configmap.yaml -n uenergyframework
-
 # Apply Kubernetes manifests for all modules in the namespace uenergyframework
 echo "Applying Kubernetes manifests for EnergyCollector..."
 microk8s kubectl apply -f ./src/energycollector/energycollector-deployment.yaml -n uenergyframework
@@ -85,6 +82,7 @@ microk8s kubectl apply -f ./src/analytics/analytics-deployment.yaml -n uenergyfr
 
 echo "Applying Kubernetes manifests for WebUI..."
 microk8s kubectl apply -f ./src/webui/webui-deployment.yaml -n uenergyframework
+
 
 # Force a restart of the deployments to ensure changes take effect in the namespace uenergyframework
 echo "Restarting deployments to apply changes..."

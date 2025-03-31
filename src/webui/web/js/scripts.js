@@ -1,31 +1,23 @@
-document.addEventListener("DOMContentLoaded", function() {
-    async function runTest() {
-        const requestData = { test_data: "test_data" };
+import { EnergyCollectorClient } from '../../src/energycollector/generated/energycollector_grpc_web_pb';
+import { TestRequest } from '../../src/energycollector/generated/energycollector_pb';
 
-        try {
-            const response = await fetch("http://10.152.183.12:50051/energycollector.EnergyCollector/RunTest", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(requestData)
-            });
+// Crear el cliente gRPC-Web apuntando al proxy
+const client = new EnergyCollectorClient('http://localhost:80/grpc-web');
 
-            if (!response.ok) {
-                throw new Error("Error en la solicitud: " + response.statusText);
-            }
+async function runGrpcTest() {
+    const request = new TestRequest();
+    request.setTestData("test_data"); // Establece los datos de prueba
 
-            const responseData = await response.json();
-            console.log("Respuesta del servidor:", responseData);
-
-            // Mostrar resultado en el div
-            document.getElementById('resultado').textContent = `Respuesta: ${responseData.message}`;
-        } catch (error) {
-            console.error("Error en la solicitud:", error);
-            document.getElementById('resultado').textContent = "Error: No se recibió respuesta del servicio.";
+    client.runTest(request, {}, (err, response) => {
+        if (err) {
+            console.error('Error en la solicitud:', err.message);
+            document.getElementById('resultado').textContent = "Error: " + err.message;
+        } else {
+            console.log('Respuesta del servidor:', response.getMessage());
+            document.getElementById('resultado').textContent = "Respuesta: " + response.getMessage();
         }
-    }
+    });
+}
 
-    // Vincula la función runTest al evento click del botón
-    document.getElementById('runTestButton').addEventListener('click', runTest);
-});
+// Vincula la función al evento click del botón
+document.getElementById('RunTest').addEventListener('click', runGrpcTest);
