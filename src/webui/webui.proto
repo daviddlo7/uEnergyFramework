@@ -2,18 +2,15 @@ syntax = "proto3";
 
 package webui;
 
-// Define the WebUI service
 service WebUI {
-  // Method to update data
   rpc UpdateData (UpdateDataRequest) returns (UpdateDataResponse);
+  rpc ShowGUI (UpdateDataRequest) returns (UpdateDataResponse);
 }
 
-// Request message for UpdateData
 message UpdateDataRequest {
-  string data = 1; // The data to be updated
+  string data = 1;
 }
 
-// Response message for UpdateData
 message UpdateDataResponse {
-  string message = 1; // The response message after updating data
+  string message = 1; 
 }

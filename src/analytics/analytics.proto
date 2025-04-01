@@ -2,12 +2,12 @@ syntax = "proto3";
 
 service Analytics {
     rpc CheckConnection (AnalyticsRequest) returns (AnalyticsResponse);
-    rpc ProcessTestData (AnalyticsRequest) returns (AnalyticsResponse); // Nuevo método
+    rpc ProcessTestData (AnalyticsRequest) returns (AnalyticsResponse);
 }
 
 message AnalyticsRequest {
     string name = 1;
-    string data = 2; // Campo para enviar datos JSON como cadena
+    string data = 2;
 }
 
 message AnalyticsResponse {

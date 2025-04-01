@@ -223,6 +223,14 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             default_logger.error(f"Failed to call ProcessTestData on Analytics service: {e}")
             return "Error calling ProcessTestData"
 
+    def save_influxdb_instantaneous_data(self, device_name, instantaneous_data, test_data):
+        logger_cli.info("TODO-influxdb: Save instantaneous data in influxDB via API")
+        return 0
+    
+    def save_data_static(self, device_name, test_parameters, test_statistics):
+        logger_cli.info("TODO-influxdb: Save static data in influxDB via API")
+        return 0
+
 class EnergyControllerMain:
     def __init__(self, devices_list, traffic_configuration, escenario, total_time, traffic_change,
                  traffic, packet_change, packet_size, db, db_type, web_interface, debug_mode, save_csvs, influxdb_token,
@@ -304,14 +312,15 @@ class EnergyControllerMain:
             #self.time_series_db = TimeSeriesDB(self.test_parameters, db_name=time_series_db_name)
             #self.static_db = StaticDB(self.test_parameters, db_name=static_db_name)
             #self.telemetry_db = TelemetryDB(self.test_parameters, db_name=telemetry_db_name)
-        logger_cli.info("TODO: Calling DB pod")
+        logger_cli.info("TODO-influxdb: Calling DB pod")
+        # Llamada a influx pidiendole los buckets
 
         # Calling pod of Grafana
-        logger_cli.info("TODO: Calling Grafana pod")
+        # Llamada a Grafana pidiendole los nombres de los dashboards
+        logger_cli.info("TODO-grafana: Calling Grafana pod")
         
         # Calling pod of Analytics
-            #self.analytics = Analytics()
-        logger_cli.info("TODO: Calling analytics pod")
+        logger_cli.info("Calling analytics pod")
         result = self.energy_collector_servicer.check_analytics_connection()
         logger_cli.info(f"Result from analytics pod: {result}")
 
@@ -342,7 +351,7 @@ class EnergyControllerMain:
         logger_cli.info(f'Traffic Packet Size (Bytes): {traffic_packet_size}')
         logger_cli.info(f'Power (W): {power}')
 
-        logger_cli.info("TODO: Call to DB pod to save instantaneous data")
+        result = self.energy_collector_servicer.save_influxdb_instantaneous_data("device_name", "instantaneous_data_devices[device_name]","test_data_devices[device_name]")
         #time_series_db.save_influxdb(device_name, instantaneous_data_devices[device_name],test_data_devices[device_name])
 
     def event_func(self, interval, max_executions):
@@ -376,15 +385,15 @@ class EnergyControllerMain:
             test_statistics_devices = {}
             for device_name, device_data in self.devices_list.items():
                 logger_cli.info("Calling Analytics pod to process test data")
-                result = self.energy_collector_servicer.analytics_process_test_data({"date": "abril", "test": "test"})
+                test_statistics = self.energy_collector_servicer.analytics_process_test_data(device_name, test_parameters)
+                test_statistics_devices[device_name] = test_statistics
 
-                logger_cli.info(f"Result from Analytics pod: {result}")
-                logger_cli.info("TODO: Call to DB pod to save static data")
-                #self.static_db.save_data_static_influxdb(device_name, self.test_parameters, test_statistics)
-                #test_statistics_devices[device_name] = test_statistics
-
+                logger_cli.info(f"Result from Analytics pod: {test_statistics}")
+                
+                result = self.energy_collector_servicer.save_data_static("device_name", "self.test_parameters", "test_statistics")
+                
                 if self.save_csvs:
-                    logger_cli.info("TODO: Call DB Pod to save CSV")
+                    logger_cli.info("TODO-csvs: Call DB Pod to save CSV")
                     #self.time_series_db.save_csv(self.test_parameters, device_name)
 
             telemetry_url = f'http://192.168.27.7:3000/d/telemetry-influxdb-{self.db}/telemetry-influxdb-{self.db}?orgId=1&from=946684801&to=946684810'

@@ -32,14 +32,3 @@ class EnergyCollectorClient:
             self.channel.close()
             self.channel = None
             self.stub = None
-
-    def run_test(self, device: str) -> str:
-        try:
-            logger.debug(f"RunTest request: {device}")
-            request = TestRequest(device=device)
-            response = self.stub.RunTest(request)
-            logger.debug(f"RunTest result: {response.message}")
-            return response.message
-        except Exception as e:
-            logger.error(f"An error occurred while running the test: {e}")
-            return "Error"

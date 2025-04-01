@@ -36,8 +36,7 @@ class AnalyticsServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ProcessTestData(self, request, context):
-        """Nuevo método
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')

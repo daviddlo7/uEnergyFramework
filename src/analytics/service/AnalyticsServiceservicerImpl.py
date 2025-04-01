@@ -35,9 +35,11 @@ class AnalyticsServicerImpl(AnalyticsServicer):
             
             if request.data:
                 LOGGER.info("Processing test data...")
+                self.p
                 return AnalyticsResponse(message="OK")
             else:
                 return AnalyticsResponse(message="Error: No data provided.")
         except Exception as e:
             LOGGER.error(f"An error occurred while processing test data: {e}")
             return AnalyticsResponse(message="Error")
+            

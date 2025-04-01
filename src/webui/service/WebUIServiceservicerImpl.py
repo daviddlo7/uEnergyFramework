@@ -26,6 +26,24 @@ class WebUIServicerImpl(WebUIServicer):
             LOGGER.error(f"An error occurred while updating data: {e}")
             return UpdateDataResponse(message="Error")
 
+    def ShowGui(self, request, context):
+        """
+        Handles the UpdateData gRPC request.
+        """
+        try:
+            LOGGER.info(f"Received UpdateData request with data: {request.data}")
+
+            if not request.data:
+                return UpdateDataResponse(message="Error: Data not provided.")
+
+            processed_data = self.show_gui(request.data)
+
+            message = f"Data updated successfully. Processed Data: {processed_data}"
+            return UpdateDataResponse(message=message)
+
+        except Exception as e:
+            LOGGER.error(f"An error occurred while updating data: {e}")
+            return UpdateDataResponse(message="Error")
     def process_data(self, data):
         """
         Example method to process the received data.
@@ -39,3 +57,8 @@ class WebUIServicerImpl(WebUIServicer):
         except Exception as e:
             LOGGER.error(f"Error processing data: {e}")
             return "Error processing data"
+    def show_gui(self, data):
+
+        # Add GUI Funcionality
+
+        return 0
