@@ -13,8 +13,8 @@ kubectl apply -f namespace.yaml
 # Generate gRPC files for all modules
 echo "Generating gRPC-Web files for EnergyCollector (JavaScript)..."
 protoc -I./src/energycollector \
-  --js_out=import_style=es6:./src/energycollector \
-  --grpc-web_out=import_style=es6,mode=grpcwebtext:./src/energycollector \
+  --js_out=import_style=commonjs:./src/energycollector \
+  --grpc-web_out=import_style=commonjs,mode=grpcwebtext:./src/energycollector \
   ./src/energycollector/energycollector.proto
 
 echo "Generating gRPC files for EnergyCollector (Python)..."
