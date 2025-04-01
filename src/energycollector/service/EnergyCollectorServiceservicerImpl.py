@@ -21,22 +21,32 @@ from analytics_pb2 import AnalyticsRequest
 from analytics_pb2_grpc import AnalyticsStub
 
 import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("defaultLogger")
 
-logger_test = logging.getLogger("customLogger")
-logger_test.propagate = False 
-logger_test.setLevel(logging.INFO)
-custom_handler = logging.StreamHandler()
-custom_formatter = logging.Formatter("TEST:%(message)s")
-custom_handler.setFormatter(custom_formatter)
-logger_test.addHandler(custom_handler)
+logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
+
+default_logger = logging.getLogger("defaultLogger")
+default_logger.setLevel(logging.INFO)
+
+logger_cli = logging.getLogger("logger_cli")
+logger_cli.setLevel(logging.INFO)
+
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(message)s') 
+handler.setFormatter(formatter)
+logger_cli.addHandler(handler)
+logger_cli.propagate = False
+
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+for handler in root_logger.handlers:
+    handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
+
 
 
 class EnergyCollectorServicerImpl(EnergyCollectorServicer):
     def RunTest(self, request, context):
         try:
-            logger.info(f"Received test request for device: {request.test_data}")
+            default_logger.info(f"Received test request for device: {request.test_data}")
 
             if not request.test_data:
                 return TestResponse(message="Error: Test_data not provided.")
@@ -63,7 +73,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
                     'node': '4.4.4.2',
                     'vendor': 'Huawei',
                     'info': 'HUAWEI NE40E-X2-M8A - VRP (R) software, Version 8.221 (NE40E V800R022C10SPC300T)',
-                    'interval': 1,
+                    'interval': 5,
                     'pdu': None
                 },
                 'HL_Ufispace': {
@@ -151,10 +161,13 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
             controller.run()
 
+            logger_cli.info("Waiting for the test to complete...")
+            controller.exit_event.wait()
+
             return TestResponse(message="Test Completed")
             
         except Exception as e:
-            logger.error(f"An error occurred while running the test: {e}")
+            default_logger.error(f"An error occurred while running the test: {e}")
             return TestResponse(message="Error")
 
     def call_analytics_service(self, name):
@@ -172,7 +185,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             return response.message
 
         except Exception as e:
-            logger.error(f"Failed to call Analytics service: {e}")
+            default_logger.error(f"Failed to call Analytics service: {e}")
             return "Error calling Analytics service"
 
 class EnergyControllerMain:
@@ -197,6 +210,7 @@ class EnergyControllerMain:
         self.stop_event = stop_event
         self.on_finished = on_finished
         self.influxdb_token = influxdb_token
+        self.exit_event = threading.Event()
 
     def setup(self):
         intervals = [device['interval'] for device in self.devices_list.values()]
@@ -241,10 +255,10 @@ class EnergyControllerMain:
             influxdb_token=self.influxdb_token
         )
 
-        logger.info("Devices: " + ", ".join(self.devices_list.keys()))
-        logger.info(f'Start Time: {self.test_parameters.start_date}/{self.test_parameters.start_time}')
-        logger.info(f'Interval: {interval} seconds')
-        logger.info(f'Test Time: {self.total_time} mins.')
+        logger_cli.info("Devices: " + ", ".join(self.devices_list.keys()))
+        logger_cli.info(f'Start Time: {self.test_parameters.start_date}/{self.test_parameters.start_time}')
+        logger_cli.info(f'Interval: {interval} seconds')
+        logger_cli.info(f'Test Time: {self.total_time} mins.')
 
         self.reader = Reader()
 
@@ -254,11 +268,11 @@ class EnergyControllerMain:
             #self.time_series_db = TimeSeriesDB(self.test_parameters, db_name=time_series_db_name)
             #self.static_db = StaticDB(self.test_parameters, db_name=static_db_name)
             #self.telemetry_db = TelemetryDB(self.test_parameters, db_name=telemetry_db_name)
-        logger.info("TODO: Calling DB pod")
+        logger_cli.info("TODO: Calling DB pod")
         
         # Calling pod of Analytics
             #self.analytics = Analytics()
-        logger.info("TODO: Calling analytics pod")
+        logger_cli.info("TODO: Calling analytics pod")
         
 
         self.test_parameters.devices_telemetry = {}
@@ -281,18 +295,18 @@ class EnergyControllerMain:
         traffic_packet_size = power_info.get('performance-metrics', {}).get('traffic-packet-size', 'N/A')
         times = test_data_devices[device_name].get('Test', {}).get('Times', 'N/A')
 
-        logger.info(f'\nName: {device_name}')
-        logger.info(f"Times: {times} s ({times / 60:.2f} mins.)")
-        logger.info(f'Traffic Throughput (Gbps): {traffic_throughput}')
-        logger.info(f'Traffic Packet Size (Bytes): {traffic_packet_size}')
-        logger.info(f'Power (W): {power}\n')
+        logger_cli.info(f'Name: {device_name}')
+        logger_cli.info(f"Times: {times} s ({times / 60:.2f} mins.)")
+        logger_cli.info(f'Traffic Throughput (Gbps): {traffic_throughput}')
+        logger_cli.info(f'Traffic Packet Size (Bytes): {traffic_packet_size}')
+        logger_cli.info(f'Power (W): {power}')
 
-        logger.info("TODO: Call to DB pod to save instantaneous data")
+        logger_cli.info("TODO: Call to DB pod to save instantaneous data")
         #time_series_db.save_influxdb(device_name, instantaneous_data_devices[device_name],test_data_devices[device_name])
 
     def event_func(self, interval, max_executions):
         if self.stop_event.is_set():
-            logger.info("Stop detected")
+            logger_cli.info("Stop detected")
             self.cleanup()
             return
 
@@ -302,7 +316,7 @@ class EnergyControllerMain:
 
             threads = []
 
-            logger.info('\nReading power data')
+            logger_cli.info('Reading power data')
             for device_name, device_data in self.devices_list.items():
                 thread = threading.Thread(target=self.process_device, args=(
                     device_name, device_data, self.test_parameters, self.reader))
@@ -312,64 +326,64 @@ class EnergyControllerMain:
             for thread in threads:
                 thread.join()
 
-            logger.info('\nWaiting for next iteration to read data')
+            logger_cli.info('Waiting for next iteration to read data')
 
         else:
-            logger.info("Event executions completed.")
+            logger_cli.info("Event executions completed.")
             test_statistics_devices = {}
             for device_name, device_data in self.devices_list.items():
-                logger.info("TODO: Call to Analytics pod to process test data")
+                logger_cli.info("TODO: Call to Analytics pod to process test data")
                 #test_statistics = self.analytics.process_test_data_influxdb(device_name, self.test_parameters)
-                logger.info("TODO: Call to DB pod to save static data")
+                logger_cli.info("TODO: Call to DB pod to save static data")
                 #self.static_db.save_data_static_influxdb(device_name, self.test_parameters, test_statistics)
                 test_statistics_devices[device_name] = test_statistics
 
                 if self.save_csvs:
-                    logger.info("TODO: Call DB Pod to save CSV")
+                    logger_cli.info("TODO: Call DB Pod to save CSV")
                     #self.time_series_db.save_csv(self.test_parameters, device_name)
 
             telemetry_url = f'http://192.168.27.7:3000/d/telemetry-influxdb-{self.db}/telemetry-influxdb-{self.db}?orgId=1&from=946684801&to=946684810'
-            logger.info(f'Open telemetry with StartDate {self.test_parameters.start_date} '
+            logger_cli.info(f'Open telemetry with StartDate {self.test_parameters.start_date} '
                   f'and StartTime {self.test_parameters.start_time} in URL: {telemetry_url}')
             if self.web_interface:
                 webbrowser.open(telemetry_url)
             self.cleanup()
 
     def cleanup(self):
-        logger.info("Running cleanup tasks...")
+        logger_cli.info("Running cleanup tasks...")
         self.test_parameters.api_session.close()
         if self.on_finished:
             self.on_finished()
 
     def run(self):
         self.setup()
-        logger.info('\nReading configuration data')
+        logger_cli.info('Reading configuration data')
         self.reader.complete_devices_configuration(self.test_parameters)
-        logger.info('\nConfiguration data completed. Devices configuration:')
+        logger_cli.info('Configuration data completed. Devices configuration:')
         for device_key, config in self.test_parameters.configuration.items():
-            logger.info(f"{device_key}: {config}")
-        logger.info('\nReading telemetry data')
+            logger_cli.info(f"{device_key}: {config}")
+        logger_cli.info('Reading telemetry data')
         self.reader.complete_devices_telemetry(self.test_parameters)
-        logger.info('\nTelemetry data completed')
+        logger_cli.info('Telemetry data completed')
 
         utc_now = datetime.now(ZoneInfo('UTC'))
         now = utc_now.astimezone(ZoneInfo('Europe/Berlin'))
         self.test_parameters.initial_time = now.timestamp()
         self.test_parameters.initial_datetime = now
 
-        logger.info("\nRunning power data reader.")
+        logger_cli.info("Running power data reader.")
         self.event_func(self.test_parameters.interval, self.test_parameters.max_interval)
 
     def handle_exit(self, signum=None, frame=None):
         """
         Acción personalizada para manejar Ctrl+C o señales de salida.
         """
-        logger.info("\nExit detected. Cleaning up before exiting...")
-        self.cleanup()  # Llama a tu método de limpieza
+        logger_cli.info("Exit detected. Cleaning up before exiting...")
+        self.cleanup()
+        self.exit_event.set()  # Activar el evento para notificar que se ha completado
         if signum is not None:
-            sys.exit(0)  # Usa sys.exit() solo si es una señal
-        logger.info('TEST ENDED')
-        return TestResponse(message="Test Completed")
+            sys.exit(0)
+        logger_cli.info('TEST ENDED')
 
 class TestParameters:
     """
@@ -634,9 +648,9 @@ class Reader:
         """
         # Consult the energy consumption of the device, either via PDU or CLI
         if test_parameters.debug_mode:
-            logger.info(f'Reading data for {device_name}')
+            logger_cli.info(f'Reading data for {device_name}')
         else:
-            logger.info('...')
+            logger_cli.info('...')
         utc_now = datetime.now(ZoneInfo('UTC'))
         now = utc_now.astimezone(ZoneInfo('Europe/Berlin'))
         instantaneous_data_yang = {}
@@ -649,8 +663,8 @@ class Reader:
                                                          power_info_pdu)  # Parse to dynamic YANG Model
 
         except Exception as e:
-            logger.info("Error reading power data -> Continue")
-            logger.info(e)
+            logger_cli.info("Error reading power data -> Continue")
+            logger_cli.info(e)
 
         power_info = instantaneous_data_yang.get('device-power-information', {})
         if not power_info or power_info.get('power') is None:
@@ -752,9 +766,9 @@ class Reader:
 
             # Consult energy consumption
             if test_parameters.debug_mode:
-                logger.info(f'\nReading telemetry data for: {device_name}')
+                logger_cli.info(f'Reading telemetry data for: {device_name}')
             else:
-                logger.info('...')
+                logger_cli.info('...')
             power_info_device = self.cli_power_data(device_data, device_name, test_parameters)
             if 'huawei' in device_name.lower():
                 for key, value in power_info_device['chassis-boards'].items():
@@ -812,10 +826,10 @@ class Reader:
             if response.status_code == 200:
                 power_data_equipo = response.json()
             else:
-                logger.info(f'Failed to retrieve data: {response.status_code}')
-                logger.info(response.text)
+                logger_cli.info(f'Failed to retrieve data: {response.status_code}')
+                logger_cli.info(response.text)
         except requests.exceptions.RequestException as e:
-            logger.info(f'Request failed: {e}')
+            logger_cli.info(f'Request failed: {e}')
             power_data_equipo = {'Error:': e}
 
         return power_data_equipo
@@ -901,7 +915,7 @@ class Reader:
             for thread in threads:
                 thread.join()
         elif vendor.lower() == 'nokia':
-            logger.info("Nokia device can't get power information")
+            logger_cli.info("Nokia device can't get power information")
             command = 'show version'
             device = {
                 'device_type': 'nokia_sros',
@@ -913,9 +927,9 @@ class Reader:
             }
             with ConnectHandler(**device) as net_connect:
                 if test_parameters.debug_mode:
-                    logger.info(f"Executing command: {command}")
+                    logger_cli.info(f"Executing command: {command}")
                 cli_text = net_connect.send_command(command)
-            logger.info("Nokia device can't get power information")
+            logger_cli.info("Nokia device can't get power information")
         elif vendor.lower() == 'cisco':
             commands = {
                 'power-supply': ['show environment power'],
@@ -989,7 +1003,7 @@ class Reader:
                 }
                 with ConnectHandler(**device) as net_connect:
                     if test_parameters.debug_mode:
-                        logger.info(f"Executing command: {command}")
+                        logger_cli.info(f"Executing command: {command}")
                     cli_text = net_connect.send_command(command)
                     power_data_equipo = self.parse_cli(cli_text, device_name, info, metric)
                     power_data_device.update(power_data_equipo)
@@ -1001,12 +1015,12 @@ class Reader:
                 try:
                     ssh_client.connect(hostname=hostname, username=username, password=password)
                 except Exception as e:
-                    logger.info(f"[!] Cannot connect to the SSH Server: {e}")
+                    logger_cli.info(f"[!] Cannot connect to the SSH Server: {e}")
                     return
 
                 if command != 'screen-length 0 temporary':
                     if test_parameters.debug_mode:
-                        logger.info(f"Executing command: {command}")
+                        logger_cli.info(f"Executing command: {command}")
                     cli_text = self.execute_command(command, ssh_client)
 
                     if metric == 'boards-slot':
@@ -1035,7 +1049,7 @@ class Reader:
 
                 ssh_client.close()
         except Exception as e:
-            logger.info(f"[!] Error in CLI, executing command: {e}")
+            logger_cli.info(f"[!] Error in CLI, executing command: {e}")
             raise
 
     def process_board_slot(self, board_slot, hostname, username, password, test_parameters, power_data_device,
@@ -1049,14 +1063,14 @@ class Reader:
             try:
                 ssh_client.connect(hostname=hostname, username=username, password=password)
             except Exception as e:
-                logger.info(f"[!] Cannot connect to the SSH Server for board slot {board_slot}: {e}")
+                logger_cli.info(f"[!] Cannot connect to the SSH Server for board slot {board_slot}: {e}")
                 time.sleep(1)
                 return
 
             # Comando específico para cada board_slot
             command = f'display boardinfo slot {board_slot} eeprom 0'
             if test_parameters.debug_mode:
-                logger.info(f"Executing command: {command}")
+                logger_cli.info(f"Executing command: {command}")
             cli_text = self.execute_command(command, ssh_client)
 
             # Procesar los datos de la board
@@ -1072,12 +1086,12 @@ class Reader:
 
         except Exception as e:
             if test_parameters.debug_mode:
-                logger.info(f"[!] Error processing board slot {board_slot}: {e}")
+                logger_cli.info(f"[!] Error processing board slot {board_slot}: {e}")
 
             # Verificar si el error es el TypeError("'int' object is not subscriptable")
             if isinstance(e, TypeError) and str(e) == "'int' object is not subscriptable":
                 if test_parameters.debug_mode:
-                    logger.info(f"[!] Retrying board slot {board_slot} due to TypeError: {e}")
+                    logger_cli.info(f"[!] Retrying board slot {board_slot} due to TypeError: {e}")
 
                 # Cerrar la sesión SSH si existe antes de reintentar
                 try:
@@ -1103,7 +1117,7 @@ class Reader:
         file = stdout.read().decode()
         err = stderr.read().decode()
         if err:
-            logger.info(err)
+            logger_cli.info(err)
             return err
         else:
             return file
@@ -1381,10 +1395,10 @@ class Reader:
         return {}
 
     def parse_to_yang(self, device_name, power_data_cli, power_info_pdu):
-        if os.path.exists("../Files/instantaneous_device_energy_tid.yang"):
-            path = '../Files/instantaneous_device_energy_tid.yang'
+        if os.path.exists('/app/Files/instantaneous_device_energy_tid.yang'):
+            path = '/app/Files/instantaneous_device_energy_tid.yang'
         else:
-            path = 'Files/instantaneous_device_energy_tid.yang'
+            path = '/app/Files/instantaneous_device_energy_tid.yang'
         dict_yang = self.parse_yang_file(path)
 
         device_inst_dict = self.cli_to_yang(device_name, power_data_cli, dict_yang)
@@ -2324,9 +2338,9 @@ class Reader:
         power_data_device = {}
 
         if test_parameters.debug_mode:
-            logger.info(f'\nReading config data for: {device_name}')
+            logger_cli.info(f'Reading config data for: {device_name}')
         else:
-            logger.info('...')
+            logger_cli.info('...')
 
         if vendor.lower() == 'huawei':
             commands = {}
