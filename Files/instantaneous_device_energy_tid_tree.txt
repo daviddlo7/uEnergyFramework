@@ -1,0 +1,46 @@
+module: instantaneous-device-energy-tid
+  +-- container device
+     +-- leaf name                  string
+     +-- leaf power                 decimal64 (W)
+     +-- leaf energy-mode           string
+     +-- leaf energy-efficiency     decimal64 (W/fps)
+     +-- container configuration
+        +-- leaf configuration       string
+        +-- leaf transceivers        string
+        +-- leaf boards              string
+        +-- leaf test-configuration  string
+     +-- container performance-metrics
+        +-- leaf ambient-temperature decimal64 (ºC)
+        +-- leaf cpu-load            uint8 (0..100) (%)
+        +-- leaf fan-speed           union
+           +-- type uint32
+           +-- type uint8 (0..100)
+        +-- leaf traffic-type        string
+        +-- leaf traffic-throughput  decimal64 (Gbps)
+        +-- leaf traffic-packet-size uint32 (Bytes)
+     +-- list power-supply
+        +-- key "name"
+        +-- leaf name                string
+        +-- leaf rated-power         decimal64 (W)
+        +-- leaf input-current       decimal64 (A)
+        +-- leaf input-voltage       decimal64 (V)
+        +-- leaf input-power         decimal64 (W)
+        +-- leaf output-current      decimal64 (A)
+        +-- leaf output-voltage      decimal64 (V)
+        +-- leaf output-power        decimal64 (W)
+        +-- leaf efficiency          uint8 (0..100) (%)
+     +-- list components
+        +-- key "name"
+        +-- leaf name                string
+        +-- leaf type                string
+        +-- leaf power               decimal64 (W)
+     +-- list boards
+        +-- key "name"
+        +-- leaf name                string
+        +-- leaf type                string
+        +-- leaf power               decimal64 (W)
+     +-- list transceivers
+        +-- key "name"
+        +-- leaf name                string
+        +-- leaf type                string
+        +-- leaf power               decimal64 (W)

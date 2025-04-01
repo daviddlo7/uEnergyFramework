@@ -7,14 +7,14 @@ import webbrowser
 from collections import deque
 from datetime import datetime
 from zoneinfo import ZoneInfo
-
+import json
 import grpc
 import requests
 import urllib3
 import paramiko
 from netmiko import ConnectHandler
 from requests.auth import HTTPBasicAuth
-
+import time
 from energycollector_pb2 import TestResponse
 from energycollector_pb2_grpc import EnergyCollectorServicer
 from analytics_pb2 import AnalyticsRequest
@@ -162,7 +162,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             controller.run()
 
             logger_cli.info("Waiting for the test to complete...")
-            controller.exit_event.wait()
+            controller.exit_event.wait()  # Esperar hasta que cleanup active el evento
 
             return TestResponse(message="Test Completed")
             
@@ -172,21 +172,56 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
     def call_analytics_service(self, name):
         try:
-            # Connect to the Analytics service (fixed IP and port)
             channel = grpc.insecure_channel("10.152.183.13:50051")
             stub = AnalyticsStub(channel)
 
-            # Create and send the request to Analytics service
             request = AnalyticsRequest(name=name)
             response = stub.RunAnalytics(request)
 
-            # Close the channel and return the response message
             channel.close()
             return response.message
 
         except Exception as e:
             default_logger.error(f"Failed to call Analytics service: {e}")
             return "Error calling Analytics service"
+    
+    def check_analytics_connection(self):
+        try:
+            channel = grpc.insecure_channel("10.152.183.13:50051")
+            stub = AnalyticsStub(channel)
+
+            request = AnalyticsRequest(name="CheckConnection")
+            response = stub.CheckConnection(request)
+
+            channel.close()
+            return response.message
+        except Exception as e:
+            default_logger.error(f"Failed to call CheckConnection on Analytics service: {e}")
+            return "Error calling CheckConnection"   
+        
+    def analytics_process_test_data(self, test_data):
+        """
+        Calls the Analytics service to process test data.
+
+        :param test_data: A dictionary containing test data to be sent as JSON.
+        :return: Response message from the Analytics service.
+        """
+        try:
+            channel = grpc.insecure_channel("10.152.183.13:50051")
+            stub = AnalyticsStub(channel)
+
+            json_data = json.dumps(test_data)
+
+            logger_cli.info(f"Sending test data to Analytics pod: {test_data}")
+            request = AnalyticsRequest(name="ProcessTestData", data=json_data)
+            response = stub.ProcessTestData(request)
+            logger_cli.info(f"Received response from Analytics pod: {response.message}")
+            
+            channel.close()
+            return response.message
+        except Exception as e:
+            default_logger.error(f"Failed to call ProcessTestData on Analytics service: {e}")
+            return "Error calling ProcessTestData"
 
 class EnergyControllerMain:
     def __init__(self, devices_list, traffic_configuration, escenario, total_time, traffic_change,
@@ -211,6 +246,7 @@ class EnergyControllerMain:
         self.on_finished = on_finished
         self.influxdb_token = influxdb_token
         self.exit_event = threading.Event()
+        self.energy_collector_servicer = EnergyCollectorServicerImpl()
 
     def setup(self):
         intervals = [device['interval'] for device in self.devices_list.values()]
@@ -269,11 +305,16 @@ class EnergyControllerMain:
             #self.static_db = StaticDB(self.test_parameters, db_name=static_db_name)
             #self.telemetry_db = TelemetryDB(self.test_parameters, db_name=telemetry_db_name)
         logger_cli.info("TODO: Calling DB pod")
+
+        # Calling pod of Grafana
+        logger_cli.info("TODO: Calling Grafana pod")
         
         # Calling pod of Analytics
             #self.analytics = Analytics()
         logger_cli.info("TODO: Calling analytics pod")
-        
+        result = self.energy_collector_servicer.check_analytics_connection()
+        logger_cli.info(f"Result from analytics pod: {result}")
+
 
         self.test_parameters.devices_telemetry = {}
 
@@ -327,16 +368,20 @@ class EnergyControllerMain:
                 thread.join()
 
             logger_cli.info('Waiting for next iteration to read data')
+            
 
         else:
+            time.sleep(5)
             logger_cli.info("Event executions completed.")
             test_statistics_devices = {}
             for device_name, device_data in self.devices_list.items():
-                logger_cli.info("TODO: Call to Analytics pod to process test data")
-                #test_statistics = self.analytics.process_test_data_influxdb(device_name, self.test_parameters)
+                logger_cli.info("Calling Analytics pod to process test data")
+                result = self.energy_collector_servicer.analytics_process_test_data({"date": "abril", "test": "test"})
+
+                logger_cli.info(f"Result from Analytics pod: {result}")
                 logger_cli.info("TODO: Call to DB pod to save static data")
                 #self.static_db.save_data_static_influxdb(device_name, self.test_parameters, test_statistics)
-                test_statistics_devices[device_name] = test_statistics
+                #test_statistics_devices[device_name] = test_statistics
 
                 if self.save_csvs:
                     logger_cli.info("TODO: Call DB Pod to save CSV")
@@ -354,6 +399,8 @@ class EnergyControllerMain:
         self.test_parameters.api_session.close()
         if self.on_finished:
             self.on_finished()
+        logger_cli.info("TEST ENDED")
+        self.exit_event.set()
 
     def run(self):
         self.setup()
@@ -380,10 +427,6 @@ class EnergyControllerMain:
         """
         logger_cli.info("Exit detected. Cleaning up before exiting...")
         self.cleanup()
-        self.exit_event.set()  # Activar el evento para notificar que se ha completado
-        if signum is not None:
-            sys.exit(0)
-        logger_cli.info('TEST ENDED')
 
 class TestParameters:
     """

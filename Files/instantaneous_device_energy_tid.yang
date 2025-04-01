@@ -1,0 +1,221 @@
+module instantaneous-device-energy-tid {
+  yang-version 1.1;
+  namespace "urn:instantaneous-device-energy-tid";
+  prefix ide;
+  
+  description
+    "This module defines the YANG model for instantaneous device energy monitoring.";
+
+  revision 2024-11-20 {
+    description "Initial version.";
+  }
+
+  container device-power-information {
+    description "Main container for the device energy monitoring data.";
+
+    leaf name {
+      type string;
+      description "Name of the device.";
+    }
+
+    leaf power {
+      type decimal64;
+      units "W";
+      description "Device power.";
+    }
+
+    leaf energy-mode {
+      type string;
+      description "Energy mode of the device.";
+    }
+
+    leaf energy-efficiency {
+      type decimal64;
+      units "W/fps";
+      description "Energy efficiency of the device.";
+    }
+
+    container configuration {
+      description "Device configuration details.";
+
+      leaf transceivers {
+        type string;
+        description "Number and type of transceivers.";
+      }
+
+      leaf boards {
+        type string;
+        description "Number and type of boards.";
+      }
+    }
+
+    container performance-metrics {
+      description "Performance metrics for the device.";
+
+      leaf ambient-temperature {
+        type decimal64;
+        units "ºC";
+        description "Ambient temperature.";
+      }
+
+      leaf cpu-load {
+        type uint8 {
+          range "0..100";
+        }
+        units "%";
+        description "CPU load.";
+      }
+
+      leaf fan-speed {
+        type union {
+          type uint32;
+          type uint8 {
+            range "0..100";
+          }
+        }
+        description
+          "Fan speed, which can be reported as RPM (integer) or percentage (0-100).";
+      }
+
+      leaf traffic-type {
+        type string;
+        description "Type of traffic.";
+      }
+
+      leaf traffic-throughput {
+        type decimal64;
+        units "Gbps";
+        description "Traffic throughput.";
+      }
+
+      leaf traffic-packet-size {
+        type uint32;
+        units "Bytes";
+        description "Traffic packet size.";
+      }
+    }
+
+    list power-supply {
+      key "name";
+      description "List of power supplies.";
+
+      leaf name {
+        type string;
+        description "Name of the power supply.";
+      }
+
+      leaf rated-power {
+        type decimal64;
+        units "W";
+        description "Rated power.";
+      }
+
+      leaf input-current {
+        type decimal64;
+        units "A";
+        description "Input current.";
+      }
+
+      leaf input-voltage {
+        type decimal64;
+        units "V";
+        description "Input voltage.";
+      }
+
+      leaf input-power {
+        type decimal64;
+        units "W";
+        description "Input power.";
+      }
+
+      leaf output-current {
+        type decimal64;
+        units "A";
+        description "Output current.";
+      }
+
+      leaf output-voltage {
+        type decimal64;
+        units "V";
+        description "Output voltage.";
+      }
+
+      leaf output-power {
+        type decimal64;
+        units "W";
+        description "Output power.";
+      }
+
+      leaf efficiency {
+        type uint8 {
+          range "0..100";
+        }
+        units "%";
+        description "Efficiency as a percentage.";
+      }
+    }
+
+    list components {
+      key "name";
+      description "List of device components.";
+
+      leaf name {
+        type string;
+        description "Name of the component.";
+      }
+
+      leaf type {
+        type string;
+        description "Type of the component.";
+      }
+
+      leaf power {
+        type decimal64;
+        units "W";
+        description "Power consumption of the component.";
+      }
+    }
+
+    list boards {
+      key "name";
+      description "List of device boards.";
+
+      leaf name {
+        type string;
+        description "Name of the board.";
+      }
+
+      leaf type {
+        type string;
+        description "Type of the board.";
+      }
+
+      leaf power {
+        type decimal64;
+        units "W";
+        description "Power consumption of the board.";
+      }
+    }
+
+    list transceivers {
+      key "name";
+      description "List of device transceivers.";
+
+      leaf name {
+        type string;
+        description "Name of the transceiver.";
+      }
+
+      leaf type {
+        type string;
+        description "Type of the transceiver.";
+      }
+
+      leaf power {
+        type decimal64;
+        units "W";
+        description "Power consumption of the transceiver.";
+      }
+    }
+  }
+}

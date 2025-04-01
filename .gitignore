@@ -6,3 +6,4 @@ webui_pb2.py
 analytics_pb2_grpc.py
 analytics_pb2.py
 .docker_temp_*
+.idea

@@ -1,0 +1,183 @@
+module static-device-energy-tid {
+  yang-version 1.1;
+  namespace "urn:static-device-energy-tid";
+  prefix sde;
+
+  description
+    "This module defines the YANG model for static device energy monitoring.";
+
+  revision 2024-11-25 {
+    description "Initial version with additional attributes.";
+  }
+
+  container device {
+    description "Main container for the static device energy monitoring data.";
+
+    leaf name {
+      type string;
+      description "Name of the device.";
+    }
+
+    leaf typical-power {
+      type decimal64;
+      units "W";
+      description "Typical power consumption of the device, when nothing is connected (boards or trasnceivers), therefore no traffic.";
+    }
+
+    leaf maximum-traffic-throughput {
+      type decimal64;
+      units "Gbps";
+      description "Maximum possible traffic of the device.";
+    }
+
+    leaf max-power {
+        type decimal64;
+        units "W";
+        description "Maximum power consumption of the device when traffic is maximum.";
+    }
+
+    leaf efficiency {
+      type decimal64;
+      units "W/fps";
+      description "Energy efficiency of the device, when traffic is maximum.";
+    }
+
+    leaf nominal-power {
+      type decimal64;
+      units "W";
+      description "Nominal power of the device.";
+    }
+
+    list power-supply {
+      key "name";
+      description "List of power supplies for the device.";
+
+      leaf name {
+        type string;
+        description "Name of the power supply.";
+      }
+
+      leaf type {
+        type string;
+        description "Type of the power supply.";
+      }
+
+      leaf capacity {
+        type decimal64;
+        units "W";
+        description "Power capacity of the supply.";
+      }
+
+      leaf typical-power {
+        type decimal64;
+        units "W";
+        description "Typical power consumption for the supply, when no traffic.";
+      }
+
+      leaf nominal-power {
+        type decimal64;
+        units "W";
+        description "Nominal power rating of the supply.";
+      }
+    }
+
+    list boards {
+      key "name";
+      description "List of boards in the device.";
+
+      leaf name {
+        type string;
+        description "Name of the board.";
+      }
+
+      leaf type {
+        type string;
+        description "Type of the board.";
+      }
+
+      leaf capacity {
+        type decimal64;
+        units "W";
+        description "Power capacity of the board.";
+      }
+
+      leaf typical-power {
+        type decimal64;
+        units "W";
+        description "Typical power consumption of the board, when no traffic.";
+      }
+
+      leaf nominal-power {
+        type decimal64;
+        units "W";
+        description "Nominal power of the board.";
+      }
+    }
+
+    list components {
+      key "name";
+      description "List of components in the device.";
+
+      leaf name {
+        type string;
+        description "Name of the component.";
+      }
+
+      leaf type {
+        type string;
+        description "Type of the component.";
+      }
+
+      leaf capacity {
+        type decimal64;
+        units "W";
+        description "Power capacity of the component.";
+      }
+
+      leaf typical-power {
+        type decimal64;
+        units "W";
+        description "Typical power consumption of the component, when no traffic.";
+      }
+
+      leaf nominal-power {
+        type decimal64;
+        units "W";
+        description "Nominal power of the component.";
+      }
+    }
+
+    list transceivers {
+      key "name";
+      description "List of transceivers in the device.";
+
+      leaf name {
+        type string;
+        description "Name of the transceiver.";
+      }
+
+      leaf type {
+        type string;
+        description "Type of the transceiver.";
+      }
+
+      leaf capacity {
+        type decimal64;
+        units "W";
+        description "Power capacity of the transceiver.";
+      }
+
+      leaf typical-power {
+        type decimal64;
+        units "W";
+        description "Typical power consumption of the transceiver, when no traffic.";
+      }
+
+      leaf nominal-power {
+        type decimal64;
+        units "W";
+        description "Nominal power of the transceiver.";
+      }
+    }
+  }
+}

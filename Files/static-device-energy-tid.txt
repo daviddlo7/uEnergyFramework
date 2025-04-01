@@ -1,0 +1,36 @@
+module: static-device-energy-tid
+  +-- container device
+     +-- leaf name                          string
+     +-- leaf typical-power                 decimal64 (W)
+     +-- leaf maximum-traffic-throughput    decimal64 (Gbps)
+     +-- leaf max-power                     decimal64 (W)
+     +-- leaf efficiency                    decimal64 (W/fps)
+     +-- leaf nominal-power                 decimal64 (W)
+     +-- list power-supply
+        +-- key "name"
+        +-- leaf name                       string
+        +-- leaf type                       string
+        +-- leaf capacity                   decimal64 (W)
+        +-- leaf typical-power              decimal64 (W)
+        +-- leaf nominal-power              decimal64 (W)
+     +-- list boards
+        +-- key "name"
+        +-- leaf name                       string
+        +-- leaf type                       string
+        +-- leaf capacity                   decimal64 (W)
+        +-- leaf typical-power              decimal64 (W)
+        +-- leaf nominal-power              decimal64 (W)
+     +-- list components
+        +-- key "name"
+        +-- leaf name                       string
+        +-- leaf type                       string
+        +-- leaf capacity                   decimal64 (W)
+        +-- leaf typical-power              decimal64 (W)
+        +-- leaf nominal-power              decimal64 (W)
+     +-- list transceivers
+        +-- key "name"
+        +-- leaf name                       string
+        +-- leaf type                       string
+        +-- leaf capacity                   decimal64 (W)
+        +-- leaf typical-power              decimal64 (W)
+        +-- leaf nominal-power              decimal64 (W)

@@ -1,6 +1,5 @@
 #!/bin/bash
-
-#sudo apt install -y nodejs npm
+kubectl delete all --all -n uenergyframework
 
 # Enable essential addons in MicroK8s
 microk8s enable dns
