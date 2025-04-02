@@ -5,7 +5,7 @@ metadata:
   namespace: uenergyframework
 spec:
   capacity:
-    storage: 10Gi
+    storage: 1Gi
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
@@ -19,7 +19,8 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - ubuntu-server-node
+          - energy
+
 
 ---
 apiVersion: v1
@@ -32,24 +33,24 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi
+      storage: 1Gi
   storageClassName: local-storage
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: influxdb-deployment
+  name: database-deployment
   namespace: uenergyframework
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: influxdb
+      app: database
   template:
     metadata:
       labels:
-        app: influxdb
+        app: database
     spec:
       containers:
       - name: influxdb-container
@@ -68,6 +69,8 @@ spec:
           value: uEnergyOrg
         - name: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
           value: my_admin_token
+        - name: DOCKER_INFLUXDB_INIT_BUCKET
+          value: initial_bucket
         volumeMounts:
         - mountPath: /var/lib/influxdb2
           name: influxdb-storage
@@ -80,13 +83,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: influxdb-service
+  name: database
   namespace: uenergyframework
 spec:
   type: ClusterIP
   clusterIP: 10.152.183.14
   selector:
-    app: influxdb
+    app: database
   ports:
   - port: 8086
     targetPort: 8086
