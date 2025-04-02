@@ -45,7 +45,6 @@ for handler in root_logger.handlers:
 class EnergyCollectorServicerImpl(EnergyCollectorServicer):
     def __init__(self):
         self.time_series_db = EnergyCollectorTimeSeriesDB()
-        self.static_db = EnergyCollectorStaticDB()
     
     def RunTest(self, request, context):
         try:
@@ -419,7 +418,7 @@ class EnergyControllerMain:
         self.cleanup()
     
     def test_grafana_connection(self):
-        grafana_url = "http://10.152.183.149:3000"
+        grafana_url = "http://10.152.183.15:3000"
         result = {"status_code": None, "response_text": None, "error": None}
 
         try:
@@ -2245,5 +2244,4 @@ class EnergyCollectorTimeSeriesDB:
     
     def save_influxdb_instantaneous_data(self, device_name, instantaneous_data, test_data):
         logger_cli.info("TODO-influxdb: Save instantaneous data in influxDB via API")
-        response = self.time_series_db.save_influxdb(self, device_name, instantaneous_data, test_data)
         return response
