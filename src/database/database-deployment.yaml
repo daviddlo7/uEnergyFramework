@@ -83,7 +83,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: database
+  name: database-service
   namespace: uenergyframework
 spec:
   type: ClusterIP

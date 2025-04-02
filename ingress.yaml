@@ -21,13 +21,13 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: webui-external-service
+            name: webui-service
             port:
               number: 8085
       - path: /database
         pathType: Prefix
         backend:
           service:
-            name: database
+            name: database-service
             port:
               number: 8086
