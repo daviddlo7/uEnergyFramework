@@ -1,5 +1,10 @@
-FROM nginx:latest
+FROM nginx:1.27.4
 
 WORKDIR /app/src
 
 ADD src/webui/web /usr/share/nginx/html/
+
+COPY src/energycollector/energycollector_pb.js /usr/share/nginx/html/js
+COPY src/energycollector/energycollector_grpc_web_pb.js /usr/share/nginx/html/js
+
+COPY src/webui/nginx.conf /etc/nginx/nginx.conf

@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 WORKDIR /app/src
 
@@ -9,6 +9,8 @@ COPY src/energycollector/ .
 
 COPY src/analytics/analytics_pb2.py /app/src/
 COPY src/analytics/analytics_pb2_grpc.py /app/src/
+
+COPY Files /app/Files
 
 EXPOSE 50051
 

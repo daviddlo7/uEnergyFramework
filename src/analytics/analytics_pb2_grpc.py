@@ -14,8 +14,13 @@ class AnalyticsStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.RunAnalytics = channel.unary_unary(
-                '/analytics.Analytics/RunAnalytics',
+        self.CheckConnection = channel.unary_unary(
+                '/Analytics/CheckConnection',
+                request_serializer=analytics__pb2.AnalyticsRequest.SerializeToString,
+                response_deserializer=analytics__pb2.AnalyticsResponse.FromString,
+                )
+        self.ProcessTestData = channel.unary_unary(
+                '/Analytics/ProcessTestData',
                 request_serializer=analytics__pb2.AnalyticsRequest.SerializeToString,
                 response_deserializer=analytics__pb2.AnalyticsResponse.FromString,
                 )
@@ -24,7 +29,13 @@ class AnalyticsStub(object):
 class AnalyticsServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def RunAnalytics(self, request, context):
+    def CheckConnection(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ProcessTestData(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -33,14 +44,19 @@ class AnalyticsServicer(object):
 
 def add_AnalyticsServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'RunAnalytics': grpc.unary_unary_rpc_method_handler(
-                    servicer.RunAnalytics,
+            'CheckConnection': grpc.unary_unary_rpc_method_handler(
+                    servicer.CheckConnection,
+                    request_deserializer=analytics__pb2.AnalyticsRequest.FromString,
+                    response_serializer=analytics__pb2.AnalyticsResponse.SerializeToString,
+            ),
+            'ProcessTestData': grpc.unary_unary_rpc_method_handler(
+                    servicer.ProcessTestData,
                     request_deserializer=analytics__pb2.AnalyticsRequest.FromString,
                     response_serializer=analytics__pb2.AnalyticsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'analytics.Analytics', rpc_method_handlers)
+            'Analytics', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
@@ -49,7 +65,7 @@ class Analytics(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def RunAnalytics(request,
+    def CheckConnection(request,
             target,
             options=(),
             channel_credentials=None,
@@ -59,7 +75,24 @@ class Analytics(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/analytics.Analytics/RunAnalytics',
+        return grpc.experimental.unary_unary(request, target, '/Analytics/CheckConnection',
+            analytics__pb2.AnalyticsRequest.SerializeToString,
+            analytics__pb2.AnalyticsResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ProcessTestData(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/Analytics/ProcessTestData',
             analytics__pb2.AnalyticsRequest.SerializeToString,
             analytics__pb2.AnalyticsResponse.FromString,
             options, channel_credentials,

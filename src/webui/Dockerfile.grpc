@@ -1,9 +1,15 @@
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 WORKDIR /app/src
 
 COPY src/webui/requirements.in .
 RUN pip install -r requirements.in
+
+COPY src/energycollector/energycollector_pb2.py /app/src/
+COPY src/energycollector/energycollector_pb2_grpc.py /app/src/
+
+COPY src/analytics/analytics_pb2.py /app/src/
+COPY src/analytics/analytics_pb2_grpc.py /app/src/
 
 COPY src/webui/ .
 

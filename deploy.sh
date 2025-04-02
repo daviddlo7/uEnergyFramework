@@ -1,21 +1,26 @@
 #!/bin/bash
-
-# Enable essential addons in MicroK8s
-microk8s enable dns
-microk8s enable storage
-microk8s enable ingress
+kubectl delete all --all -n uenergyframework
 
 # Apply the namespace configuration
 echo "Applying namespace configuration..."
 kubectl apply -f namespace.yaml
 
+echo "Applying namespace configuration..."
+kubectl apply -f ingress.yaml
+
 # Generate gRPC files for all modules
-echo "Generating gRPC files for EnergyCollector..."
+echo "Generating gRPC-Web files for EnergyCollector (JavaScript)..."
+protoc -I./src/energycollector \
+  --js_out=import_style=commonjs:./src/energycollector \
+  --grpc-web_out=import_style=commonjs,mode=grpcwebtext:./src/energycollector \
+  ./src/energycollector/energycollector.proto
+
+echo "Generating gRPC files for EnergyCollector (Python)..."
 python3 -m grpc_tools.protoc \
--I./src/energycollector \
---python_out=./src/energycollector \
---grpc_python_out=./src/energycollector \
-./src/energycollector/energycollector.proto
+  -I./src/energycollector \
+  --python_out=./src/energycollector \
+  --grpc_python_out=./src/energycollector \
+  ./src/energycollector/energycollector.proto
 
 echo "Generating gRPC files for Analytics..."
 python3 -m grpc_tools.protoc \
@@ -80,10 +85,18 @@ microk8s kubectl apply -f ./src/analytics/analytics-deployment.yaml -n uenergyfr
 echo "Applying Kubernetes manifests for WebUI..."
 microk8s kubectl apply -f ./src/webui/webui-deployment.yaml -n uenergyframework
 
+echo "Applying Kubernetes manifest for InfluxDB..."
+microk8s kubectl apply -f ./src/database/database-deployment.yaml -n uenergyframework
+
+echo "Applying Kubernetes manifest for Grafana..."
+microk8s kubectl apply -f ./src/grafana/grafana-deployment.yaml -n uenergyframework
+
 # Force a restart of the deployments to ensure changes take effect in the namespace uenergyframework
 echo "Restarting deployments to apply changes..."
 microk8s kubectl rollout restart deployment energycollector-deployment -n uenergyframework
 microk8s kubectl rollout restart deployment analytics-deployment -n uenergyframework
 microk8s kubectl rollout restart deployment webui-deployment -n uenergyframework
+microk8s kubectl rollout restart deployment database-deployment -n uenergyframework
+microk8s kubectl rollout restart deployment grafana-deployment -n uenergyframework
 
 echo "Deployment completed successfully."

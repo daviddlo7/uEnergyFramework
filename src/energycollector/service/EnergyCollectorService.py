@@ -2,13 +2,12 @@ import grpc
 from concurrent import futures
 from grpc_reflection.v1alpha import reflection
 import os
-import logging
 from energycollector_pb2_grpc import add_EnergyCollectorServicer_to_server
 from energycollector_pb2 import DESCRIPTOR as ENERGYCOLLECTOR_DESCRIPTOR
 from service.EnergyCollectorServiceservicerImpl import EnergyCollectorServicerImpl
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+import logging
 logger = logging.getLogger(__name__)
 
 # Custom gRPC settings

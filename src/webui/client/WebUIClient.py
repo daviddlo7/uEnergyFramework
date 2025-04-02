@@ -32,14 +32,3 @@ class WebUIClient:
             self.channel.close()
             self.channel = None
             self.stub = None
-
-    def update_data(self, data: str) -> str:
-        try:
-            LOGGER.debug(f"UpdateData request: {data}")
-            request = UpdateDataRequest(data=data)
-            response = self.stub.UpdateData(request)
-            LOGGER.debug(f"UpdateData result: {response.message}")
-            return response.message
-        except Exception as e:
-            LOGGER.error(f"An error occurred while updating data: {e}")
-            return "Error"

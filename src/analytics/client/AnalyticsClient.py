@@ -42,20 +42,3 @@ class AnalyticsClient:
             self.channel.close()
             self.channel = None
             self.stub = None
-
-    def run_analytics(self, name: str) -> str:
-        """
-        Call the RunAnalytics method on the gRPC server.
-
-        :param name: The name of the analytics operation.
-        :return: Response message indicating success or error.
-        """
-        try:
-            LOGGER.debug(f"RunAnalytics request: {name}")
-            request = AnalyticsRequest(name=name)
-            response = self.stub.RunAnalytics(request)
-            LOGGER.debug(f"RunAnalytics result: {response.message}")
-            return response.message
-        except Exception as e:
-            LOGGER.error(f"An error occurred while running analytics: {e}")
-            return "Error"
