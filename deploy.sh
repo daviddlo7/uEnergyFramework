@@ -51,10 +51,6 @@ docker build -t webui-grpc:v1 -f ./src/webui/Dockerfile.grpc .
 echo "Building Docker image for WebUI (Nginx)..."
 docker build -t webui-nginx:v1 -f ./src/webui/Dockerfile.nginx .
 
-# Build Docker image for InfluxDB
-echo "Building Docker image for InfluxDB..."
-docker pull influxdb:2.6-alpine
-
 # Export Docker images to tar files for MicroK8s
 echo "Exporting Docker image for EnergyCollector to tar file..."
 docker save energycollector:v1 -o energycollector-v1.tar
@@ -67,9 +63,6 @@ docker save webui-grpc:v1 -o webui-grpc-v1.tar
 
 echo "Exporting Docker image for WebUI (Nginx) to tar file..."
 docker save webui-nginx:v1 -o webui-nginx-v1.tar
-
-echo "Exporting Docker image for InfluxDB to tar file..."
-docker save influxdb:2.6-alpine -o influxdb-v2.6.tar
 
 # Import images into MicroK8s
 echo "Importing EnergyCollector image into MicroK8s..."
@@ -84,9 +77,6 @@ microk8s ctr image import webui-grpc-v1.tar
 echo "Importing WebUI (Nginx) image into MicroK8s..."
 microk8s ctr image import webui-nginx-v1.tar
 
-echo "Importing InfluxDB image into MicroK8s..."
-microk8s ctr image import influxdb-v2.6.tar
-
 # Apply Kubernetes manifests for all modules in the namespace uenergyframework
 echo "Applying Kubernetes manifests for EnergyCollector..."
 microk8s kubectl apply -f ./src/energycollector/energycollector-deployment.yaml -n uenergyframework
@@ -100,11 +90,15 @@ microk8s kubectl apply -f ./src/webui/webui-deployment.yaml -n uenergyframework
 echo "Applying Kubernetes manifest for InfluxDB..."
 microk8s kubectl apply -f ./src/database/database-deployment.yaml -n uenergyframework
 
+echo "Applying Kubernetes manifest for Grafana..."
+microk8s kubectl apply -f ./src/grafana/grafana-deployment.yaml -n uenergyframework
+
 # Force a restart of the deployments to ensure changes take effect in the namespace uenergyframework
 echo "Restarting deployments to apply changes..."
 microk8s kubectl rollout restart deployment energycollector-deployment -n uenergyframework
 microk8s kubectl rollout restart deployment analytics-deployment -n uenergyframework
 microk8s kubectl rollout restart deployment webui-deployment -n uenergyframework
 microk8s kubectl rollout restart deployment database-deployment -n uenergyframework
+microk8s kubectl rollout restart deployment grafana-deployment -n uenergyframework
 
 echo "Deployment completed successfully."
