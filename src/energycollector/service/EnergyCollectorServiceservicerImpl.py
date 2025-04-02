@@ -312,17 +312,18 @@ class EnergyControllerMain:
             #self.time_series_db = TimeSeriesDB(self.test_parameters, db_name=time_series_db_name)
             #self.static_db = StaticDB(self.test_parameters, db_name=static_db_name)
             #self.telemetry_db = TelemetryDB(self.test_parameters, db_name=telemetry_db_name)
-        logger_cli.info("TODO-influxdb: Calling DB pod")
         # Llamada a influx pidiendole los buckets
-
+        influxdb_result = self.get_influxdb_buckets()
+        logger_cli.info(f"Result from Influx pod: {influxdb_result}")
         # Calling pod of Grafana
         # Llamada a Grafana pidiendole los nombres de los dashboards
-        logger_cli.info("TODO-grafana: Calling Grafana pod")
-        
+        grafana_result = self.test_grafana_connection()
+        logger_cli.info(f"Result from Grafana pod: {grafana_result}")
+
         # Calling pod of Analytics
         logger_cli.info("Calling analytics pod")
-        result = self.energy_collector_servicer.check_analytics_connection()
-        logger_cli.info(f"Result from analytics pod: {result}")
+        analytics_result = self.energy_collector_servicer.check_analytics_connection()
+        logger_cli.info(f"Result from analytics pod: {analytics_result}")
 
 
         self.test_parameters.devices_telemetry = {}
@@ -436,6 +437,40 @@ class EnergyControllerMain:
         """
         logger_cli.info("Exit detected. Cleaning up before exiting...")
         self.cleanup()
+    
+    def test_grafana_connection(self):
+        grafana_url = "http://10.152.183.149:3000"
+        result = {"status_code": None, "response_text": None, "error": None}
+
+        try:
+            response = requests.get(grafana_url)
+            result["status_code"] = response.status_code
+            if response.status_code == 200:
+                result["response_text"] = response.text[:200]
+            else:
+                result["response_text"] = f"Error: HTTP {response.status_code}"
+        except Exception as e:
+            result["error"] = str(e)
+
+        return result
+
+    def get_influxdb_buckets(self):
+        influxdb_url = "http://10.152.183.14:8086/api/v2/buckets"
+        headers = {"Authorization": "Token my_admin_token"}
+        result = {"status_code": None, "buckets": None, "error": None}
+
+        try:
+            response = requests.get(influxdb_url, headers=headers)
+            result["status_code"] = response.status_code
+            if response.status_code == 200:
+                buckets_data = response.json().get("buckets", [])
+                bucket_names = ";".join(bucket["name"] for bucket in buckets_data)
+                return bucket_names
+            else:
+                result["buckets"] = f"Error: HTTP {response.status_code}"
+        except Exception as e:
+            result["error"] = str(e)
+            return f"Error: {result['error']}"
 
 class TestParameters:
     """
