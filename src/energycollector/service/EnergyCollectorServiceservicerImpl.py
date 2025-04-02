@@ -44,6 +44,9 @@ for handler in root_logger.handlers:
 
 
 class EnergyCollectorServicerImpl(EnergyCollectorServicer):
+    def __init__(self):
+        self.time_series_db = EnergyCollectorTimeSeriesDB()
+        self.static_db = EnergyCollectorStaticDB()
     def RunTest(self, request, context):
         try:
             default_logger.info(f"Received test request for device: {request.test_data}")
@@ -225,10 +228,12 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
     def save_influxdb_instantaneous_data(self, device_name, instantaneous_data, test_data):
         logger_cli.info("TODO-influxdb: Save instantaneous data in influxDB via API")
-        return 0
+        response = self.time_series_db.save_influxdb(self, device_name, instantaneous_data, test_data)
+        return response
     
     def save_data_static(self, device_name, test_parameters, test_statistics):
         logger_cli.info("TODO-influxdb: Save static data in influxDB via API")
+        response = self.static_db.save_data_static_influxdb(self, device_name, test_parameters, test_statistics)
         return 0
 
 class EnergyControllerMain:
@@ -2578,3 +2583,17 @@ class Reader:
             config_components = elements + results
 
             test_parameters.configuration[device_name] = ";".join(config_components)
+
+class EnergyCollectorTimeSeriesDB:
+    def __init__(self):
+        pass
+    
+    def save_influxdb(self, device_name, data, test_dict):
+        return 0
+    
+class EnergyCollectorStaticDB:
+    def __init__(self):
+        pass
+    
+    def save_data_static_influxdb(self, device_name, test_parameters, test_statistics):
+        return 0
