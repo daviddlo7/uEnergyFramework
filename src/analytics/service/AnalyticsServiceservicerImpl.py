@@ -4,13 +4,32 @@ from analytics_pb2_grpc import AnalyticsServicer
 import math
 import numpy as np
 from scipy.stats import t
-LOGGER = logging.getLogger(__name__)
+import logging
+import os
+
+logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
+
+default_logger = logging.getLogger("defaultLogger")
+default_logger.setLevel(logging.INFO)
+
+logger_cli = logging.getLogger("logger_cli")
+logger_cli.setLevel(logging.INFO)
+
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(message)s') 
+handler.setFormatter(formatter)
+logger_cli.addHandler(handler)
+logger_cli.propagate = False
+
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+for handler in root_logger.handlers:
+    handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
 
 class AnalyticsServicerImpl(AnalyticsServicer):
     def __init__(self):
-        self.time_series_db = AnalyticsTimeSeriesDB()
-        self.analytics_db = AnalyticsTelemetryDB()
-        self.static_db = AnalyticsStaticDB()
+        self.analytics = Analytics()
+
 
     def CheckConnection(self, request, context):
         """
@@ -21,13 +40,13 @@ class AnalyticsServicerImpl(AnalyticsServicer):
         :return: A response message indicating success or error.
         """
         try:
-            LOGGER.info(f"Received CheckConnection request with name: {request.name}")
+            logger_cli.info(f"Received CheckConnection request with name: {request.name}")
             if request.name == "CheckConnection":  # Verifica que el nombre sea válido
                 return AnalyticsResponse(message="OK")
             else:
                 return AnalyticsResponse(message="Error: Invalid operation name.")
         except Exception as e:
-            LOGGER.error(f"An error occurred while handling CheckConnection: {e}")
+            logger_cli.error(f"An error occurred while handling CheckConnection: {e}")
             return AnalyticsResponse(message="Error")
     
     def ProcessTestData(self, request, context):
@@ -39,20 +58,20 @@ class AnalyticsServicerImpl(AnalyticsServicer):
         :return: A response message indicating success or error.
         """
         try:
-            LOGGER.info(f"Received ProcessTestData request with data: {request.data}")
+            logger_cli.info(f"Received ProcessTestData request with data: {request.data}")
             
             if request.data:
-                LOGGER.info("Processing test data...")
+                logger_cli.info("Processing test data...")
                 
-                # Aquí comienza la implementación de la funcionalidad para procesar los datos JSON recibidos.
-                # Puedes deserializar el JSON, realizar validaciones, ejecutar lógica de negocio o cualquier
-                # otro procesamiento necesario antes de devolver una respuesta.
+                self.analytics.process_test_data_influxdb(self, "a")
+
+                self.analytics.save_data_static("device_name", "self.test_parameters", "test_statistics")
                 
                 return AnalyticsResponse(message="OK")
             else:
                 return AnalyticsResponse(message="Error: No data provided.")
         except Exception as e:
-            LOGGER.error(f"An error occurred while processing test data: {e}")
+            logger_cli.error(f"An error occurred while processing test data: {test_statistics}")
             return AnalyticsResponse(message="Error")
 
 class Analytics:
@@ -66,15 +85,9 @@ class Analytics:
     """
 
     def __init__(self):
-        self.analytics_servicer = AnalyticsServicerImpl()
-
-    def process_test_data_sql(self, test_parameters, time_series_db, telemetry_db):
-        test_data = time_series_db.query_filtered_data(test_parameters)
-        test_statistics = self.test_statistics(test_data, test_parameters)
-        telemetry_db.save_in_database_sql(
-            test_statistics) 
-        self.export_to_excel(test_statistics, test_parameters)
-        return test_statistics
+        self.time_series_db = AnalyticsTimeSeriesDB()
+        self.analytics_db = AnalyticsTelemetryDB()
+        self.static_db = AnalyticsStaticDB()
 
     def test_statistics(self, test_data, test_parameters, all_components):
         times_values = []
@@ -302,20 +315,36 @@ class Analytics:
     def save_in_database(self, test_statistics):
         pass
 
-    def process_test_data_influxdb(self, device_name, test_parameters, time_series_db, telemetry_db):
-        test_data, all_components = time_series_db.influx_filtered_data(device_name, test_parameters)
+    def process_test_data_influxdb(self, device_name, test_parameters, telemetry_db):
+        test_data, all_components = self.time_series_db.influx_filtered_data(device_name, test_parameters)
         test_statistics = self.test_statistics_influxdb(device_name, test_data, test_parameters, all_components)
-        telemetry_db.save_in_database_influxdb(test_statistics)
+        self.telemetry_db.save_in_database_influxdb(test_statistics)
         return test_statistics
 
 class AnalyticsTimeSeriesDB:
     def __init__(self):
         pass
 
+    def query_filtered_data(self, test_parameters):
+        logger_cli.info("TODO-influxdb: Create this function")
+        pass
+    
+    def influx_filtered_data(device_name, test_parameters):
+        logger_cli.info("TODO-influxdb: Create this function")
+        pass
+
 class AnalyticsTelemetryDB:
     def __init__(self):
         pass
 
+    def save_in_database_influxdb(test_statistics):
+        logger_cli.info("TODO-influxdb: Create this function")
+        pass
+
 class AnalyticsStaticDB:
     def __init__(self):
+        pass
+
+    def save_static_yang_influxdb(self, dict_yang):
+        logger_cli.info("TODO-influxdb: Create this function")
         pass

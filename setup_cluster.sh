@@ -8,3 +8,5 @@ if ! grep -q "127.0.0.1 uenergyframework.local" /etc/hosts; then
 else
   echo "'127.0.0.1 uenergyframework.local' is already present in /etc/hosts"
 fi
+
+npm install -g protoc-gen-grpc-web

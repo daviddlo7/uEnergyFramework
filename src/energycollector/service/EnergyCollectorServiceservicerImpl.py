@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 import threading
 import time
 import webbrowser
@@ -47,6 +46,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
     def __init__(self):
         self.time_series_db = EnergyCollectorTimeSeriesDB()
         self.static_db = EnergyCollectorStaticDB()
+    
     def RunTest(self, request, context):
         try:
             default_logger.info(f"Received test request for device: {request.test_data}")
@@ -173,21 +173,6 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             default_logger.error(f"An error occurred while running the test: {e}")
             return TestResponse(message="Error")
 
-    def call_analytics_service(self, name):
-        try:
-            channel = grpc.insecure_channel("10.152.183.13:50051")
-            stub = AnalyticsStub(channel)
-
-            request = AnalyticsRequest(name=name)
-            response = stub.RunAnalytics(request)
-
-            channel.close()
-            return response.message
-
-        except Exception as e:
-            default_logger.error(f"Failed to call Analytics service: {e}")
-            return "Error calling Analytics service"
-    
     def check_analytics_connection(self):
         try:
             channel = grpc.insecure_channel("10.152.183.13:50051")
@@ -226,16 +211,6 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             default_logger.error(f"Failed to call ProcessTestData on Analytics service: {e}")
             return "Error calling ProcessTestData"
 
-    def save_influxdb_instantaneous_data(self, device_name, instantaneous_data, test_data):
-        logger_cli.info("TODO-influxdb: Save instantaneous data in influxDB via API")
-        response = self.time_series_db.save_influxdb(self, device_name, instantaneous_data, test_data)
-        return response
-    
-    def save_data_static(self, device_name, test_parameters, test_statistics):
-        logger_cli.info("TODO-influxdb: Save static data in influxDB via API")
-        response = self.static_db.save_data_static_influxdb(self, device_name, test_parameters, test_statistics)
-        return 0
-
 class EnergyControllerMain:
     def __init__(self, devices_list, traffic_configuration, escenario, total_time, traffic_change,
                  traffic, packet_change, packet_size, db, db_type, web_interface, debug_mode, save_csvs, influxdb_token,
@@ -260,6 +235,7 @@ class EnergyControllerMain:
         self.influxdb_token = influxdb_token
         self.exit_event = threading.Event()
         self.energy_collector_servicer = EnergyCollectorServicerImpl()
+        self.time_series_db = EnergyCollectorTimeSeriesDB()
 
     def setup(self):
         intervals = [device['interval'] for device in self.devices_list.values()]
@@ -357,8 +333,7 @@ class EnergyControllerMain:
         logger_cli.info(f'Traffic Packet Size (Bytes): {traffic_packet_size}')
         logger_cli.info(f'Power (W): {power}')
 
-        result = self.energy_collector_servicer.save_influxdb_instantaneous_data("device_name", "instantaneous_data_devices[device_name]","test_data_devices[device_name]")
-        #time_series_db.save_influxdb(device_name, instantaneous_data_devices[device_name],test_data_devices[device_name])
+        result = self.time_series_db.save_influxdb_instantaneous_data("device_name", "instantaneous_data_devices[device_name]","test_data_devices[device_name]")
 
     def event_func(self, interval, max_executions):
         if self.stop_event.is_set():
@@ -731,7 +706,6 @@ class Reader:
     def __init__(self):
         pass
 
-    # noinspection PyTypeChecker
     def read_data(self, test_parameters, device_name, device_data):
         """
         Function that collects data from devices
@@ -1214,245 +1188,6 @@ class Reader:
         else:
             return file
 
-    def parse_board_power_huawei(self, cli_text, power_data, device_name, info):
-        if info.find("NE40E-X8") != -1:
-            if info.find("NE40E V800R022C10") != -1:
-                chassis_power = ".         Chassis  "
-                space = "        "
-                for line in cli_text.splitlines()[7:12]:
-                    line = line.replace(" ", "")
-                    variable, value = line.split(":")
-                    try:
-                        chassis_power = chassis_power + "{:.2f}".format(float(value)) + space
-                    except:
-                        continue
-                    space = space + "    "
-
-                board_power = self.extractDataBetweenLines(cli_text, 14, 5)
-                cli_text = board_power.splitlines()[:1] + [chassis_power] + board_power.splitlines()[1:]
-                cli_text = os.linesep.join([line for line in cli_text if line])
-            else:
-                cli_text = self.extractDataBetweenLines(cli_text, 6, 5)
-                cli_text = cli_text.replace('------------------------------------------------------------------', '')
-                cli_text = os.linesep.join([line for line in cli_text.splitlines() if line])
-        elif info.find("ATN") != -1:
-            if info.find("ATN 950C V800R022C10") != -1:
-                chassis_power = ".         Chassis  "
-                space = "        "
-                for line in cli_text.splitlines()[9:13]:
-                    line = line.replace(" ", "")
-                    variable, value = line.split(":")
-                    try:
-                        chassis_power = chassis_power + "{:.2f}".format(float(value)) + space
-                    except:
-                        continue
-                    space = space + "    "
-
-                board_power = self.extractDataBetweenLines(cli_text, 15, 5)
-                cli_text = board_power.splitlines()[:1] + [chassis_power] + board_power.splitlines()[1:]
-                cli_text = os.linesep.join([line for line in cli_text if line])
-            else:
-                cli_text = self.extractDataBetweenLines(cli_text, 5, 5)
-                cli_text = cli_text.replace('--------------------------------------------------------------------', '')
-                cli_text = os.linesep.join([line for line in cli_text.splitlines() if line])
-        elif info.find("NE40E-X2") != 1:
-            if info.find("NE40E V800R022C10") != -1:
-                chassis_power = ".         Chassis  "
-                space = "        "
-                for line in cli_text.splitlines()[6:11]:
-                    line = line.replace(" ", "")
-                    variable, value = line.split(":")
-                    try:
-                        chassis_power = chassis_power + "{:.2f}".format(float(value)) + space
-                    except:
-                        continue
-                    space = space + "    "
-
-                board_power = self.extractDataBetweenLines(cli_text, 12, 5)
-                cli_text = board_power.splitlines()[:1] + [chassis_power] + board_power.splitlines()[1:]
-                cli_text = os.linesep.join([line for line in cli_text if line])
-            else:
-                indexes = []
-                parse_text = ""
-                lines = cli_text.split('\n')
-                for number, line in enumerate(cli_text.splitlines()):
-                    if 'Slot' in line:
-                        indexes.append(number)
-                for n, index in enumerate(indexes):
-
-                    if n == 0:
-                        cli_text = parse_text + lines[index + 1]
-
-                    cli_text = cli_text + '\n' + lines[index + 3]
-
-                cli_text = os.linesep.join([line for line in cli_text.splitlines() if line])
-
-        name = info.split(' ')[0]
-        version = info.split(' ')[1]
-        power_data_equipo = {
-            'Name': f'{name} {version}'
-        }
-        count = 0
-        variables = {}
-
-        for line in cli_text.splitlines():
-            if count == 0:
-                variables = line.split()
-            else:
-                valores = line.split()
-                power_data_equipo[count] = dict(zip(variables, valores))
-            count += 1
-        power_data[device_name] = power_data_equipo
-        return power_data
-
-    def parse_board_power_adva(self, cli_text, power_data, device_name):
-        """
-        Function that converts the text returned by the command line of ADVA devices to a python dictionary.
-        Args:
-            cli_text: text returned by the command
-            power_data: dictionary with all energy data of all equipment
-            device_name: device name
-
-        Returns: updated power_data with new device power information
-
-        """
-        cli_text = cli_text.replace(
-            '===========================================================================================', '')
-        cli_text = cli_text.replace(
-            '-------------------------------------------------------------------------------------------', '')
-
-        cli_text = os.linesep.join([line for line in cli_text.splitlines() if line])
-        power_data_equipo = dict()
-        count = 0
-        variables = {}
-
-        for line in cli_text.splitlines():
-            if count == 0:
-                variables = line.split()
-            elif count > 2:
-                valores = line.split()
-                power_data_equipo[count] = dict(zip(variables, valores))
-            count += 1
-        power_data[device_name] = power_data_equipo
-        return power_data
-
-    def parse_board_power_cisco(self, cli_text, power_data, device_name):
-        """
-        Function that converts the text returned by the command line of CISCO devices to a python dictionary.
-        Args:
-            cli_text: text returned by the command
-            power_data: dictionary with all energy data of all equipment
-            device_name: device name
-
-        Returns: updated power_data with new device power information
-
-        """
-        board_power = self.extractDataBetweenLines(cli_text, 6, 8)
-        cli_text = os.linesep.join([line for line in board_power.splitlines() if line])
-
-        dict = {}
-        power_data_equipo = {}
-        for line in cli_text.splitlines():
-            line = line.replace(" ", "")
-            variable, valor = line.split(":")
-            valor = valor.replace("W", "")
-            dict.update({variable: valor})
-        power_data_equipo[0] = dict
-        power_data[device_name] = power_data_equipo
-        return power_data
-
-    def parse_board_power_ufispace(self, cli_text, power_data, device_name):
-        """
-        Function that converts the text returned by the command line of UFISPACE devices to a python dictionary.
-        Args:
-            cli_text: text returned by the command
-            power_data: dictionary with all energy data of all equipment
-            device_name: device name
-
-        Returns: updated power_data with new device power information
-
-        """
-        cli_text = self.extractDataBetweenLines(cli_text, 10, 0)
-
-        power_data_equipo = {}
-        variable_actual = None
-
-        for line in cli_text.splitlines():
-            if line != '':
-                if line.find('PSU') != -1:
-                    variable_actual = line.split(':')[0]
-                    power_data_equipo[variable_actual] = {}
-                    continue
-                if line.find('Node') != -1:
-                    variable_actual = "Node"
-                    power_data_equipo[variable_actual] = {}
-                    continue
-
-                if variable_actual.find('PSU') != -1:
-                    value, valor = line.split(':')
-                    power_data_equipo[variable_actual][value.lstrip('\t')] = valor.lstrip(' ')
-                elif variable_actual == 'Node':
-                    if line.find('Zone') == -1:
-                        value, valor = line.split(':')
-                        power_data_equipo[variable_actual][value.lstrip('\t')] = valor.lstrip(' ')
-
-        power_data[device_name] = power_data_equipo
-        return power_data
-
-    def parse_board_power_juniper(self, cli_text, power_data, device_name):
-        """
-        Function that converts the text returned by the command line of JUNIPER devices to a python dictionary.
-        Args:
-            cli_text: text returned by the command
-            power_data: dictionary with all energy data of all equipment
-            device_name: device name
-
-        Returns: updated power_data with new device power information
-
-        """
-        power_data_equipo = {}
-        variable_actual = None
-
-        for line in cli_text.splitlines():
-            if line != '':
-                if line.find('PEM') != -1:
-                    variable_actual = line
-                    power_data_equipo[variable_actual] = {}
-                    continue
-                if line.find('System') != -1:
-                    variable_actual = "System"
-                    power_data_equipo[variable_actual] = {}
-                    continue
-                elif line.find('Item') != -1:
-                    variable_actual = "Item"
-                    power_data_equipo[variable_actual] = {}
-                    continue
-
-                if variable_actual.find('PEM') != -1:
-                    value, valor = line.split(':')
-                    power_data_equipo[variable_actual][value.lstrip(' ')] = valor.lstrip(' ')
-                elif variable_actual == 'System':
-                    if line.find('Zone') == -1:
-                        value, valor = line.split(':')
-                        power_data_equipo[variable_actual][value.lstrip(' ')] = valor.lstrip(' ')
-                elif variable_actual == 'Item':
-                    if line.find('Fan') != -1:
-                        line = ';'.join(line.split())
-                        variable, value = [line.split(';')[0] + line.split(';')[1] + line.split(';')[2] + ' (W)',
-                                           line.split(';')[3]]
-                        power_data_equipo[variable_actual][variable] = value
-                    elif line.find('SFB') != -1 or line.find('FPC') != -1:
-                        line = ';'.join(line.split())
-                        variable, value = [line.split(';')[0] + line.split(';')[1] + ' (W)', line.split(';')[2]]
-                        power_data_equipo[variable_actual][variable] = value
-                    elif line.find('RE') != -1:
-                        line = ';'.join(line.split())
-                        variable, value = [line.split(';')[0] + ' (W)', line.split(';')[1]]
-                        power_data_equipo[variable_actual][variable] = value
-
-        power_data[device_name] = power_data_equipo
-        return power_data
-
     def extractDataBetweenLines(self, cli_text, start_lines, end_lines):
         """
         additional function to remove uninteresting data from the command output, removing lines at both the beginning
@@ -1482,9 +1217,6 @@ class Reader:
                                                                 test_parameters)
 
         return power_info_cli, power_info_pdu
-
-    def yang_to_dict(self, txt_name):
-        return {}
 
     def parse_to_yang(self, device_name, power_data_cli, power_info_pdu):
         if os.path.exists('/app/Files/instantaneous_device_energy_tid.yang'):
@@ -1707,26 +1439,6 @@ class Reader:
             i += 1
 
         return dict
-
-    def add_test_to_yang(self, instantaneous_data_yang, datetime, actual_time, throughput, packet_size,
-                         test_parameters):
-        test_dict = self.parse_yang_file("../Files/Test.yang")
-        test_dict['Traffic']['DateTime'] = datetime
-        test_dict['Traffic']['Times_s'] = actual_time
-        test_dict['Traffic']['Throughput_Gbps'] = throughput
-        test_dict['Traffic']['PacketSize_B'] = packet_size
-
-        test_dict['Configuration']['TrafficConfiguration'] = test_parameters.traffic_configuration
-        test_dict['Configuration']['Configuration'] = test_parameters.configuration
-        test_dict['Configuration']['Scenario'] = test_parameters.escenario
-        test_dict['Configuration']['StartTime'] = test_parameters.start_time
-        test_dict['Configuration']['StartDate'] = test_parameters.start_date
-
-        for key in instantaneous_data_yang.keys():
-            instantaneous_data_yang[key]['Test'] = test_dict
-            #value['Test'] = test_dict
-
-        return instantaneous_data_yang
 
     def parse_cli(self, cli_text, device_name, info, type):
         power_data_equipo = {}
@@ -2352,63 +2064,6 @@ class Reader:
 
         device_dict['device-power-information']['power'] = power
 
-    def complete_device_telemetry(self, test_parameters, instantaneous_data_yang, test_dict):
-
-        '''if not instantaneous_data_yang:
-            for key, value in test_parameters.device_telemetry.items():
-                if key != 'Times' or key != 'DateTime':
-                    value = 0
-            return'''
-
-        for key, value in test_parameters.device_telemetry.items():
-            if key != 'Times' or key != 'DateTime':
-                value = 0
-
-        for key in test_parameters.device_telemetry.keys():
-            if key == 'DateTime':
-                test_parameters.device_telemetry[key].append(
-                    test_dict['Test'][key].strftime("%Y-%m-%d %H:%M:%S"))
-            elif key == 'Times_s':
-                test_parameters.device_telemetry[key].append(
-                    test_dict['Test']['Times'])
-            elif key == 'Throughput_Gbps':
-                test_parameters.device_telemetry[key].append(
-                    instantaneous_data_yang[test_parameters.device_name]['device-power-information'][
-                        'performance-metrics']['traffic-throughput'])
-            elif key == 'PacketSize_B':
-                test_parameters.device_telemetry[key].append(
-                    instantaneous_data_yang[test_parameters.device_name]['device-power-information'][
-                        'performance-metrics']['traffic-packet-size'])
-            elif key == 'Chassis_':
-                test_parameters.device_telemetry[key].append(
-                    instantaneous_data_yang[test_parameters.device_name]['device-power-information']['power'])
-            elif key == 'System (W)':
-                test_parameters.device_telemetry[key].append(
-                    instantaneous_data_yang[test_parameters.device_name]['device-power-information']['power'])
-            elif 'CRXT' in key:
-                test_parameters.device_telemetry[key].append(
-                    instantaneous_data_yang[test_parameters.device_name]['device-power-information']['power'])
-            elif 'NodePower' in key:
-                test_parameters.device_telemetry[key].append(
-                    instantaneous_data_yang[test_parameters.device_name]['device-power-information']['power'])
-            elif any(substring in key for substring in ['PIC', 'NPU', 'MPU']):
-                for index, dictionary in enumerate(
-                        instantaneous_data_yang[test_parameters.device_name]['device-power-information'][
-                            'boards']):
-                    if dictionary.get("Name") == key:
-                        test_parameters.device_telemetry[key].append(
-                            instantaneous_data_yang[test_parameters.device_name]['device-power-information'][
-                                'boards'][index]['power'])
-                        break
-            else:
-                for index, dictionary in enumerate(
-                        instantaneous_data_yang[test_parameters.device_name]['device-power-information']['components']):
-                    if dictionary.get("name") == key:
-                        test_parameters.device_telemetry[key].append(
-                            instantaneous_data_yang[test_parameters.device_name]['device-power-information'][
-                                'components'][index]['power'])
-                        break
-
     def cli_configuration_data(self, device, device_name, test_parameters):
         """
         Function that makes the CLI call to the device.
@@ -2588,12 +2243,7 @@ class EnergyCollectorTimeSeriesDB:
     def __init__(self):
         pass
     
-    def save_influxdb(self, device_name, data, test_dict):
-        return 0
-    
-class EnergyCollectorStaticDB:
-    def __init__(self):
-        pass
-    
-    def save_data_static_influxdb(self, device_name, test_parameters, test_statistics):
-        return 0
+    def save_influxdb_instantaneous_data(self, device_name, instantaneous_data, test_data):
+        logger_cli.info("TODO-influxdb: Save instantaneous data in influxDB via API")
+        response = self.time_series_db.save_influxdb(self, device_name, instantaneous_data, test_data)
+        return response

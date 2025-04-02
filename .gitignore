@@ -10,6 +10,4 @@ webui_pb2.py
 .docker_temp_*
 .idea
 influxdb-data/*
-!influxdb-data/
-influxdb-data/influxd.sqlite
-influxdb-data/influxd.bolt
+!influxdb-data/.gitkeep
