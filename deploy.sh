@@ -1,14 +1,12 @@
 #!/bin/bash
 kubectl delete all --all -n uenergyframework
 
-# Enable essential addons in MicroK8s
-microk8s enable dns
-microk8s enable storage
-microk8s enable ingress
-
 # Apply the namespace configuration
 echo "Applying namespace configuration..."
 kubectl apply -f namespace.yaml
+
+echo "Applying namespace configuration..."
+kubectl apply -f ingress.yaml
 
 # Generate gRPC files for all modules
 echo "Generating gRPC-Web files for EnergyCollector (JavaScript)..."
