@@ -22,7 +22,7 @@ class AnalyticsService:
     def install_servicers(self):
         add_AnalyticsServiceServicer_to_server(self.servicer, self.server)
         service_names = [
-            ANALYTICS_DESCRIPTOR.services_by_name["Analytics"].full_name,
+            ANALYTICS_DESCRIPTOR.services_by_name["AnalyticsService"].full_name,
             reflection.SERVICE_NAME,
         ]
         reflection.enable_server_reflection(service_names, self.server)

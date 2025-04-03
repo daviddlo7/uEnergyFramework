@@ -19,7 +19,7 @@ from energycollector_pb2_grpc import EnergyCollectorServicer
 from analytics_pb2 import ProcessTestDataRequest
 from analytics_pb2 import CheckConnectionRequest
 from analytics_pb2_grpc import AnalyticsServiceStub
-
+from google.protobuf.json_format import MessageToDict
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
@@ -185,30 +185,86 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             return response.message
         except Exception as e:
             default_logger.error(f"Failed to call CheckConnection on Analytics service: {e}")
-            return "Error calling CheckConnection"   
-        
+            return "Error calling CheckConnection"
+
     def analytics_process_test_data(self, device_name, test_parameters):
         """
         Calls the Analytics service to process test data.
 
-        :param test_data: A dictionary containing test data to be sent as JSON.
+        :param device_name: Name of the device.
+        :param test_parameters: An instance of TestParameters class.
         :return: Response message from the Analytics service.
         """
         try:
+            # Create a gRPC insecure channel (no TLS)
             channel = grpc.insecure_channel("10.152.183.13:50051")
             stub = AnalyticsServiceStub(channel)
 
-            json_data = json.dumps(test_parameters)
+            # Map devices_list to gRPC Device messages
+            devices_list_proto = {
+                name: Device(
+                    ip=device["ip"],
+                    username=device["username"],
+                    password=device["password"],
+                    port=device["port"],
+                    vendor=device["vendor"],
+                    info=device["info"]
+                )
+                for name, device in test_parameters.devices_list.items()
+            }
 
-            logger_cli.info(f"Sending test data to Analytics pod: {test_parameters}")
-            request = ProcessTestDataRequest(name=device_name, data=json_data)
+            # Map devices_telemetry to gRPC Telemetry messages
+            devices_telemetry_proto = {
+                name: Telemetry(times_s=list(telemetry["Times_s"]))
+                for name, telemetry in test_parameters.devices_telemetry.items()
+            }
+
+            # Map power_data_devices to gRPC PowerData messages
+            power_data_devices_proto = {
+                name: PowerData(components_power=device)
+                for name, device in test_parameters.power_data_devices.items()
+            }
+
+            # Build the TestParameters gRPC message
+            test_parameters_proto = TestParameters(
+                devices_list=devices_list_proto,
+                traffic_configuration=test_parameters.traffic_configuration,
+                configuration=test_parameters.configuration,
+                escenario=test_parameters.escenario,
+                interval=test_parameters.interval,
+                max_interval=test_parameters.max_interval,
+                traffic_change=test_parameters.traffic_change or 0.0,
+                traffic=test_parameters.traffic or 0.0,
+                actual_traffic=test_parameters.actual_traffic or 0.0,
+                packet_change=test_parameters.packet_change or 0.0,
+                packet_size=test_parameters.packet_size or 0,
+                actual_packet_size=test_parameters.actual_packet_size or 0,
+                initial_time=str(test_parameters.initial_time),
+                initial_datetime=str(test_parameters.initial_datetime),
+                devices_telemetry=devices_telemetry_proto,
+                power_data_devices=power_data_devices_proto,
+                web_interface=test_parameters.web_interface
+            )
+
+            # Create the gRPC request
+            request = ProcessTestDataRequest(
+                device_name=device_name,
+                test_parameters=test_parameters_proto
+            )
+
+            # Call the remote method
+            logger_cli.info("Sending request:")
+            logger_cli.info(MessageToDict(request))
             response = stub.ProcessTestData(request)
-            logger_cli.info(f"Received response from Analytics pod: {response.message}")
-            
+            logger_cli.info(f"Response from Analytics service: {response.message}")
+
+            # Close the channel
             channel.close()
+
             return response.message
+
         except Exception as e:
-            default_logger.error(f"Failed to call ProcessTestData on Analytics service: {e}")
+            logger_cli.info(f"Error calling ProcessTestData on Analytics service: {e}")
             return "Error calling ProcessTestData"
 
 class EnergyControllerMain:
@@ -697,6 +753,9 @@ class TestParameters: # TODO Create TestParameters
         # Include all attributes in the representation with better formatting
         attrs = ',\n  '.join(f"{key}={value!r}" for key, value in self.__dict__.items())
         return f"TestParameters(\n  {attrs}\n)"
+
+    def to_dict(self):
+        return self.__dict__
 
 class Reader:
     """
@@ -2247,8 +2306,8 @@ class EnergyCollectorTimeSeriesDB:
     
     def save_influxdb_instantaneous_data(self, device_name, instantaneous_data, test_data):
         logger_cli.info("TODO-influxdb: Save instantaneous data in influxDB via API")
-        return response
+        return 0
     
-    def save_csv(test_parameters, device_name):
+    def save_csv(self, test_parameters, device_name):
         logger_cli.info("TODO-CSVs: Save instantaneous data in influxDB via API")
         return 0

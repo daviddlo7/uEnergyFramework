@@ -40,39 +40,51 @@ class AnalyticsServiceServicerImpl(AnalyticsServiceServicer):
         :return: A response message indicating success or error.
         """
         try:
-            logger_cli.info(f"Received CheckConnection request with name: {request.name}")
-            if request.name == "CheckConnection":  # Verifica que el nombre sea válido
+            logger_cli.info(f"Received CheckConnection request with name: {request.id}")
+            if request.id == "CheckConnection":  # Verifica que el nombre sea válido
                 return AnalyticsResponse(message="OK")
             else:
                 return AnalyticsResponse(message="Error: Invalid operation name.")
         except Exception as e:
             logger_cli.error(f"An error occurred while handling CheckConnection: {e}")
             return AnalyticsResponse(message="Error")
-    
+
     def ProcessTestData(self, request, context):
         """
         Handles the ProcessTestData RPC call.
 
-        :param request: The incoming request containing the JSON data as a string.
+        :param request: The incoming request containing test parameters.
         :param context: The gRPC context.
         :return: A response message indicating success or error.
         """
         try:
-            logger_cli.info(f"Received ProcessTestData request with data: {request.data}")
-            
-            if request.data:
-                logger_cli.info("Processing test data...")
-                
-                device_name = request.device_name
-                test_parameters = dict(request.test_parameters)
+            # Convert Protobuf object to a Python dictionary
+            def convert_to_dict(proto_obj):
+                """
+                Recursively converts a Protobuf object to a Python dictionary.
+                """
+                if isinstance(proto_obj, dict):
+                    return {k: convert_to_dict(v) for k, v in proto_obj.items()}
+                elif isinstance(proto_obj, list):
+                    return [convert_to_dict(v) for v in proto_obj]
+                elif hasattr(proto_obj, "ListFields"):
+                    return {field.name: convert_to_dict(getattr(proto_obj, field.name)) for field in
+                            proto_obj.DESCRIPTOR.fields}
+                else:
+                    return proto_obj
 
-                test_statistics = self.analytics.process_test_data_influxdb(device_name, test_parameters)
-                
-                return AnalyticsResponse(message="OK")
-            else:
-                return AnalyticsResponse(message="Error: No data provided.")
+            # Extract device name and test parameters
+            device_name = request.device_name
+            test_parameters = convert_to_dict(request.test_parameters)
+
+            # Call the analytics function with the converted dictionary
+            self.analytics.process_test_data_influxdb(device_name, test_parameters)
+
+            # Return success response
+            return AnalyticsResponse(message="OK")
+
         except Exception as e:
-            logger_cli.error(f"An error occurred while processing test data: {test_statistics}")
+            logger_cli.error(f"An error occurred while processing test data: {e}")
             return AnalyticsResponse(message="Error")
 
 class Analytics:
@@ -333,15 +345,17 @@ class AnalyticsTimeSeriesDB:
         logger_cli.info("TODO-influxdb: Create this function")
         pass
     
-    def influx_filtered_data(device_name, test_parameters):
+    def influx_filtered_data(self, device_name, test_parameters):
         logger_cli.info("TODO-influxdb: Create this function")
-        pass
+        test_data = None
+        all_components = None
+        return test_data, all_components
 
 class AnalyticsTelemetryDB:
     def __init__(self):
         pass
 
-    def save_in_database_influxdb(test_statistics):
+    def save_in_database_influxdb(self, test_statistics):
         logger_cli.info("TODO-influxdb: Create this function")
         pass
 
@@ -349,6 +363,6 @@ class AnalyticsStaticDB:
     def __init__(self):
         pass
 
-    def save_data_static(device_name, test_parameters, test_statistics):
+    def save_data_static(self, device_name, test_parameters, test_statistics):
         logger_cli.info("TODO-influxdb: Create this function")
         pass

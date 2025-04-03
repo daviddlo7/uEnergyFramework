@@ -6,7 +6,7 @@ service AnalyticsService {
 }
 
 message AnalyticsResponse {
-  string response = 1;
+  string message = 1;
 }
 
 message CheckConnectionRequest {
@@ -14,7 +14,46 @@ message CheckConnectionRequest {
 }
 
 message ProcessTestDataRequest {
-  string device_name = 1;
-  map<string, string> test_parameters = 2;
+    string device_name = 1;
+    TestParameters test_parameters = 2;
+}
+
+message TestParameters {
+    map<string, Device> devices_list = 1;
+    string traffic_configuration = 2;
+    map<string, string> configuration = 3;
+    string escenario = 4;
+    int32 interval = 5;
+    int32 max_interval = 6;
+    double traffic_change = 7;
+    double traffic = 8;
+    double actual_traffic = 9;
+    double packet_change = 10;
+    int32 packet_size = 11;
+    int32 actual_packet_size = 12;
+    string start_date = 13;
+    string start_time = 14;
+
+    map<string, Telemetry> devices_telemetry = 15;
+    map<string, PowerData> power_data_devices = 16;
+
+    bool web_interface = 17;
+}
+
+message Device {
+    string ip = 1;
+    string username = 2;
+    string password = 3;
+    string port = 4;
+    string vendor = 5;
+    string info = 6;
+}
+
+message Telemetry {
+    repeated double times_s = 1;
+}
+
+message PowerData {
+    map<string, double> components_power = 1;
 }
 
