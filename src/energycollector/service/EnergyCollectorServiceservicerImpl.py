@@ -178,7 +178,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             channel = grpc.insecure_channel("10.152.183.13:50051")
             stub = AnalyticsServiceStub(channel)
 
-            request = CheckConnectionRequest(name="CheckConnection")
+            request = CheckConnectionRequest(id="CheckConnection")
             response = stub.CheckConnection(request)
 
             channel.close()
@@ -187,7 +187,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             default_logger.error(f"Failed to call CheckConnection on Analytics service: {e}")
             return "Error calling CheckConnection"   
         
-    def analytics_process_test_data(self, test_data):
+    def analytics_process_test_data(self, device_name, test_parameters):
         """
         Calls the Analytics service to process test data.
 
@@ -198,10 +198,10 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             channel = grpc.insecure_channel("10.152.183.13:50051")
             stub = AnalyticsServiceStub(channel)
 
-            json_data = json.dumps(test_data)
+            json_data = json.dumps(test_parameters)
 
-            logger_cli.info(f"Sending test data to Analytics pod: {test_data}")
-            request = ProcessTestDataRequest(name="ProcessTestData", data=json_data)
+            logger_cli.info(f"Sending test data to Analytics pod: {test_parameters}")
+            request = ProcessTestDataRequest(name=device_name, data=json_data)
             response = stub.ProcessTestData(request)
             logger_cli.info(f"Received response from Analytics pod: {response.message}")
             
@@ -351,7 +351,7 @@ class EnergyControllerMain:
             logger_cli.info('Reading power data')
             for device_name, device_data in self.devices_list.items():
                 thread = threading.Thread(target=self.process_device, args=(
-                    device_name, device_data, self.reader))
+                    device_name, device_data,))
                 threads.append(thread)
                 thread.start()
 

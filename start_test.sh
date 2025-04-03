@@ -1,6 +1,6 @@
 #Terminal 1 -> EnergyCollector Logs
 
-Con INFO o ERROR
+#Con INFO o ERROR
 kubectl logs -f -n uenergyframework $(kubectl get pods -n uenergyframework --no-headers | grep energycollector-deployment | awk '{print $1}')
 
 #Sin INFO o ERROR
@@ -8,7 +8,7 @@ kubectl logs -f -n uenergyframework $(kubectl get pods -n uenergyframework --no-
 
 #Terminal 2 -> Analytics Logs
 
-Con INFO o ERROR
+#Con INFO o ERROR
 kubectl logs -f -n uenergyframework $(kubectl get pods -n uenergyframework --no-headers | grep analytics-deployment | awk '{print $1}')
 
 #Sin INFO o ERROR
