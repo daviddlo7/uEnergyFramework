@@ -16,8 +16,9 @@ from requests.auth import HTTPBasicAuth
 import time
 from energycollector_pb2 import TestResponse
 from energycollector_pb2_grpc import EnergyCollectorServicer
-from analytics_pb2 import AnalyticsRequest
-from analytics_pb2_grpc import AnalyticsStub
+from analytics_pb2 import ProcessTestDataRequest
+from analytics_pb2 import CheckConnectionRequest
+from analytics_pb2_grpc import AnalyticsServiceStub
 
 import logging
 
@@ -175,9 +176,9 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
     def check_analytics_connection(self):
         try:
             channel = grpc.insecure_channel("10.152.183.13:50051")
-            stub = AnalyticsStub(channel)
+            stub = AnalyticsServiceStub(channel)
 
-            request = AnalyticsRequest(name="CheckConnection")
+            request = CheckConnectionRequest(name="CheckConnection")
             response = stub.CheckConnection(request)
 
             channel.close()
@@ -195,12 +196,12 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
         """
         try:
             channel = grpc.insecure_channel("10.152.183.13:50051")
-            stub = AnalyticsStub(channel)
+            stub = AnalyticsServiceStub(channel)
 
             json_data = json.dumps(test_data)
 
             logger_cli.info(f"Sending test data to Analytics pod: {test_data}")
-            request = AnalyticsRequest(name="ProcessTestData", data=json_data)
+            request = ProcessTestDataRequest(name="ProcessTestData", data=json_data)
             response = stub.ProcessTestData(request)
             logger_cli.info(f"Received response from Analytics pod: {response.message}")
             
@@ -235,6 +236,10 @@ class EnergyControllerMain:
         self.exit_event = threading.Event()
         self.energy_collector_servicer = EnergyCollectorServicerImpl()
         self.time_series_db = EnergyCollectorTimeSeriesDB()
+        self.url_influxdb = "http://10.152.183.14:8086"
+        self.token = "my_admin_token"
+        self.org = "uEnergyOrg"
+        self.bucket = "time_series_db_pruebas"
 
     def setup(self):
         intervals = [device['interval'] for device in self.devices_list.values()]
@@ -289,9 +294,6 @@ class EnergyControllerMain:
         # Connection with other pods
 
         # Calling pod of DB
-            #self.time_series_db = TimeSeriesDB(self.test_parameters, db_name=time_series_db_name)
-            #self.static_db = StaticDB(self.test_parameters, db_name=static_db_name)
-            #self.telemetry_db = TelemetryDB(self.test_parameters, db_name=telemetry_db_name)
         # Llamada a influx pidiendole los buckets
         influxdb_result = self.get_influxdb_buckets()
         logger_cli.info(f"Result from Influx pod: {influxdb_result}")
@@ -308,11 +310,11 @@ class EnergyControllerMain:
 
         self.test_parameters.devices_telemetry = {}
 
-    def process_device(self, device_name, device_data, test_parameters, reader):
+    def process_device(self, device_name, device_data):
         instantaneous_data_devices = {}
         test_data_devices = {}
 
-        instantaneous_data, test_dict = reader.read_data(test_parameters, device_name, device_data)
+        instantaneous_data, test_dict = self.reader.read_data(self.test_parameters, device_name, device_data)
 
         if not instantaneous_data and not test_dict:
             return
@@ -349,7 +351,7 @@ class EnergyControllerMain:
             logger_cli.info('Reading power data')
             for device_name, device_data in self.devices_list.items():
                 thread = threading.Thread(target=self.process_device, args=(
-                    device_name, device_data, self.test_parameters, self.reader))
+                    device_name, device_data, self.reader))
                 threads.append(thread)
                 thread.start()
 
@@ -365,17 +367,18 @@ class EnergyControllerMain:
             test_statistics_devices = {}
             for device_name, device_data in self.devices_list.items():
                 logger_cli.info("Calling Analytics pod to process test data")
-                test_statistics = self.energy_collector_servicer.analytics_process_test_data(device_name, test_parameters)
+                test_statistics = self.energy_collector_servicer.analytics_process_test_data(device_name, self.test_parameters)
                 test_statistics_devices[device_name] = test_statistics
 
                 logger_cli.info(f"Result from Analytics pod: {test_statistics}")
                 
-                result = self.energy_collector_servicer.save_data_static("device_name", "self.test_parameters", "test_statistics")
+                # result = self.energy_collector_servicer.save_data_static("device_name", "self.test_parameters", "test_statistics")
                 
                 if self.save_csvs:
                     logger_cli.info("TODO-csvs: Call DB Pod to save CSV")
-                    #self.time_series_db.save_csv(self.test_parameters, device_name)
+                    self.time_series_db.save_csv(self.test_parameters, device_name)
 
+            logger_cli.info("TODO-grafana: Change this URL to the new one of Grafana Pod")
             telemetry_url = f'http://192.168.27.7:3000/d/telemetry-influxdb-{self.db}/telemetry-influxdb-{self.db}?orgId=1&from=946684801&to=946684810'
             logger_cli.info(f'Open telemetry with StartDate {self.test_parameters.start_date} '
                   f'and StartTime {self.test_parameters.start_time} in URL: {telemetry_url}')
@@ -451,7 +454,7 @@ class EnergyControllerMain:
             result["error"] = str(e)
             return f"Error: {result['error']}"
 
-class TestParameters:
+class TestParameters: # TODO Create TestParameters
     """
     Class to store the parameters used during the respective test.
 
@@ -2245,3 +2248,7 @@ class EnergyCollectorTimeSeriesDB:
     def save_influxdb_instantaneous_data(self, device_name, instantaneous_data, test_data):
         logger_cli.info("TODO-influxdb: Save instantaneous data in influxDB via API")
         return response
+    
+    def save_csv(test_parameters, device_name):
+        logger_cli.info("TODO-CSVs: Save instantaneous data in influxDB via API")
+        return 0

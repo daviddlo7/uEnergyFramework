@@ -1,15 +1,20 @@
 syntax = "proto3";
 
-service Analytics {
-    rpc CheckConnection (AnalyticsRequest) returns (AnalyticsResponse);
-    rpc ProcessTestData (AnalyticsRequest) returns (AnalyticsResponse);
-}
-
-message AnalyticsRequest {
-    string name = 1;
-    string data = 2;
+service AnalyticsService {
+  rpc CheckConnection(CheckConnectionRequest) returns (AnalyticsResponse);
+  rpc ProcessTestData(ProcessTestDataRequest) returns (AnalyticsResponse);
 }
 
 message AnalyticsResponse {
-    string message = 1;
+  string response = 1;
 }
+
+message CheckConnectionRequest {
+  string id = 1;
+}
+
+message ProcessTestDataRequest {
+  string device_name = 1;
+  map<string, string> test_parameters = 2;
+}
+

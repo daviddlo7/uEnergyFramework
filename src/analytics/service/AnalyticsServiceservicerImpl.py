@@ -1,6 +1,6 @@
 import logging
 from analytics_pb2 import AnalyticsResponse
-from analytics_pb2_grpc import AnalyticsServicer
+from analytics_pb2_grpc import AnalyticsServiceServicer
 import math
 import numpy as np
 from scipy.stats import t
@@ -26,7 +26,7 @@ root_logger.setLevel(logging.INFO)
 for handler in root_logger.handlers:
     handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
 
-class AnalyticsServicerImpl(AnalyticsServicer):
+class AnalyticsServiceServicerImpl(AnalyticsServiceServicer):
     def __init__(self):
         self.analytics = Analytics()
 
@@ -63,9 +63,10 @@ class AnalyticsServicerImpl(AnalyticsServicer):
             if request.data:
                 logger_cli.info("Processing test data...")
                 
-                self.analytics.process_test_data_influxdb(self, "a")
+                device_name = request.device_name
+                test_parameters = dict(request.test_parameters)
 
-                self.analytics.save_data_static("device_name", "self.test_parameters", "test_statistics")
+                test_statistics = self.analytics.process_test_data_influxdb(device_name, test_parameters)
                 
                 return AnalyticsResponse(message="OK")
             else:
@@ -88,6 +89,12 @@ class Analytics:
         self.time_series_db = AnalyticsTimeSeriesDB()
         self.analytics_db = AnalyticsTelemetryDB()
         self.static_db = AnalyticsStaticDB()
+        self.url_influxdb = "http://10.152.183.14:8086"
+        self.token = "my_admin_token"
+        self.org = "uEnergyOrg"
+        self.time_series_bucket = "time_series_db_pruebas"
+        self.telemetry_bucket = "telemetry_db_pruebas"
+        self.static_bucket = "static_db_pruebas"
 
     def test_statistics(self, test_data, test_parameters, all_components):
         times_values = []
@@ -309,17 +316,14 @@ class Analytics:
 
         return test_statistics
 
-    def export_to_excel(self, test_statistics, test_parameters):
-        pass
-
     def save_in_database(self, test_statistics):
         pass
 
-    def process_test_data_influxdb(self, device_name, test_parameters, telemetry_db):
+    def process_test_data_influxdb(self, device_name, test_parameters):
         test_data, all_components = self.time_series_db.influx_filtered_data(device_name, test_parameters)
         test_statistics = self.test_statistics_influxdb(device_name, test_data, test_parameters, all_components)
         self.telemetry_db.save_in_database_influxdb(test_statistics)
-        return test_statistics
+        self.static_db.save_data_static(device_name, test_parameters, test_statistics)
 
 class AnalyticsTimeSeriesDB:
     def __init__(self):
@@ -345,6 +349,6 @@ class AnalyticsStaticDB:
     def __init__(self):
         pass
 
-    def save_static_yang_influxdb(self, dict_yang):
+    def save_data_static(device_name, test_parameters, test_statistics):
         logger_cli.info("TODO-influxdb: Create this function")
         pass
