@@ -20,6 +20,14 @@ from analytics_pb2 import ProcessTestDataRequest
 from analytics_pb2 import CheckConnectionRequest
 from analytics_pb2_grpc import AnalyticsServiceStub
 from google.protobuf.json_format import MessageToDict
+from analytics_pb2 import Device
+from analytics_pb2 import PowerData
+from analytics_pb2 import Telemetry
+from analytics_pb2 import TestParameters
+from analytics_pb2 import ConfigDataDevice
+from analytics_pb2 import StaticPowerDevice
+from analytics_pb2 import StaticPowerComponent
+
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
@@ -131,7 +139,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
             traffic_configuration = "default"
             escenario = "default"
-            total_time = 1
+            total_time = 0.1
             traffic_change = None
             traffic = 0
             packet_change = None
@@ -215,7 +223,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
             # Map devices_telemetry to gRPC Telemetry messages
             devices_telemetry_proto = {
-                name: Telemetry(times_s=list(telemetry["Times_s"]))
+                name: Telemetry(times_s=list(telemetry.get("Times_s", [])))
                 for name, telemetry in test_parameters.devices_telemetry.items()
             }
 
@@ -223,6 +231,29 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             power_data_devices_proto = {
                 name: PowerData(components_power=device)
                 for name, device in test_parameters.power_data_devices.items()
+            }
+
+            # Map config_data_devices to gRPC ConfigDataDevice messages
+            config_data_devices_proto = {
+                name: ConfigDataDevice(config_details={
+                    key: value["type"]  # Assuming you want to map 'type' as the detail
+                    for key, value in device.items()
+                })
+                for name, device in test_parameters.config_data_devices.items()
+            }
+
+            # Map devices_static_power_dicc to gRPC StaticPowerDevice messages
+            devices_static_power_dicc_proto = {
+                vendor_name: StaticPowerDevice(
+                    components_power_data={
+                        component_name: StaticPowerComponent(
+                            nominal_power_device=component.get("nominal-power", 0),
+                            typical_power_device=component.get("typical-power", 0)
+                        )
+                        for component_name, component in vendor_data.get("transceivers", {}).items()
+                    }
+                )
+                for vendor_name, vendor_data in test_parameters.devices_static_power_dicc.items()
             }
 
             # Build the TestParameters gRPC message
@@ -239,11 +270,17 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
                 packet_change=test_parameters.packet_change or 0.0,
                 packet_size=test_parameters.packet_size or 0,
                 actual_packet_size=test_parameters.actual_packet_size or 0,
-                initial_time=str(test_parameters.initial_time),
+                initial_time=float(test_parameters.initial_time),
                 initial_datetime=str(test_parameters.initial_datetime),
+                start_date=test_parameters.start_date,
+                start_time=test_parameters.start_time,
                 devices_telemetry=devices_telemetry_proto,
                 power_data_devices=power_data_devices_proto,
-                web_interface=test_parameters.web_interface
+                web_interface=test_parameters.web_interface,
+                config_data_devices=config_data_devices_proto,
+                devices_static_power_dicc=devices_static_power_dicc_proto,
+                debug_mode=test_parameters.debug_mode,
+                influxdb_token=test_parameters.influxdb_token
             )
 
             # Create the gRPC request
@@ -255,7 +292,9 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             # Call the remote method
             logger_cli.info("Sending request:")
             logger_cli.info(MessageToDict(request))
+
             response = stub.ProcessTestData(request)
+
             logger_cli.info(f"Response from Analytics service: {response.message}")
 
             # Close the channel
@@ -264,7 +303,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             return response.message
 
         except Exception as e:
-            logger_cli.info(f"Error calling ProcessTestData on Analytics service: {e}")
+            logger_cli.error(f"Error calling ProcessTestData on Analytics service: {e}")
             return "Error calling ProcessTestData"
 
 class EnergyControllerMain:
@@ -322,7 +361,7 @@ class EnergyControllerMain:
             telemetry_db_name = f'../DataBase/telemetry_db_{self.db}.db'
             dashboard_name = f'dashboard-{self.db_type}-{self.db}2'
 
-        self.test_parameters = TestParameters(
+        self.test_parameters = TestParametersEnergyCollector(
             devices_list=self.devices_list,
             traffic_configuration=self.traffic_configuration,
             escenario=self.escenario,
@@ -510,7 +549,7 @@ class EnergyControllerMain:
             result["error"] = str(e)
             return f"Error: {result['error']}"
 
-class TestParameters: # TODO Create TestParameters
+class TestParametersEnergyCollector: # TODO Create TestParameters
     """
     Class to store the parameters used during the respective test.
 

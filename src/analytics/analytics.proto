@@ -31,13 +31,17 @@ message TestParameters {
     double packet_change = 10;
     int32 packet_size = 11;
     int32 actual_packet_size = 12;
-    string start_date = 13;
-    string start_time = 14;
-
-    map<string, Telemetry> devices_telemetry = 15;
-    map<string, PowerData> power_data_devices = 16;
-
-    bool web_interface = 17;
+    double initial_time = 13;
+    string initial_datetime = 14;
+    string start_date = 15;
+    string start_time = 16;
+    map<string, Telemetry> devices_telemetry = 17;
+    map<string, PowerData> power_data_devices = 18;
+    bool web_interface = 19;
+    map<string, ConfigDataDevice> config_data_devices = 20;
+    map<string, StaticPowerDevice> devices_static_power_dicc = 21;
+    bool debug_mode = 22;
+    string influxdb_token = 23;
 }
 
 message Device {
@@ -57,3 +61,15 @@ message PowerData {
     map<string, double> components_power = 1;
 }
 
+message ConfigDataDevice {
+   map<string, string> config_details = 1;
+}
+
+message StaticPowerDevice {
+   map<string, StaticPowerComponent> components_power_data = 1;
+}
+
+message StaticPowerComponent {
+   double nominal_power_device = 1;
+   double typical_power_device = 2;
+}

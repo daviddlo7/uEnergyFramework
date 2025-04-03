@@ -77,6 +77,8 @@ class AnalyticsServiceServicerImpl(AnalyticsServiceServicer):
             device_name = request.device_name
             test_parameters = convert_to_dict(request.test_parameters)
 
+            logger_cli.error(f"DATOS TEST PARAMETERS: {test_parameters}")
+
             # Call the analytics function with the converted dictionary
             self.analytics.process_test_data_influxdb(device_name, test_parameters)
 
@@ -333,6 +335,7 @@ class Analytics:
 
     def process_test_data_influxdb(self, device_name, test_parameters):
         test_data, all_components = self.time_series_db.influx_filtered_data(device_name, test_parameters)
+        logger_cli.info(f"DATOS PROCESS_TEST_DATA_INFLUX: {test_data} y {all_components}")
         test_statistics = self.test_statistics_influxdb(device_name, test_data, test_parameters, all_components)
         self.telemetry_db.save_in_database_influxdb(test_statistics)
         self.static_db.save_data_static(device_name, test_parameters, test_statistics)
