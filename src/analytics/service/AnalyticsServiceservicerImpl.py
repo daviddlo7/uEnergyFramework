@@ -6,6 +6,10 @@ import numpy as np
 from scipy.stats import t
 import logging
 import os
+from influxdb_client import InfluxDBClient, Point, WritePrecision
+from influxdb_client.client.write_api import SYNCHRONOUS
+from zoneinfo import ZoneInfo
+from datetime import datetime
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
 
@@ -40,39 +44,53 @@ class AnalyticsServiceServicerImpl(AnalyticsServiceServicer):
         :return: A response message indicating success or error.
         """
         try:
-            logger_cli.info(f"Received CheckConnection request with name: {request.name}")
-            if request.name == "CheckConnection":  # Verifica que el nombre sea válido
+            logger_cli.info(f"Received CheckConnection request with name: {request.id}")
+            if request.id == "CheckConnection":  # Verifica que el nombre sea válido
                 return AnalyticsResponse(message="OK")
             else:
                 return AnalyticsResponse(message="Error: Invalid operation name.")
         except Exception as e:
             logger_cli.error(f"An error occurred while handling CheckConnection: {e}")
             return AnalyticsResponse(message="Error")
-    
+
     def ProcessTestData(self, request, context):
         """
         Handles the ProcessTestData RPC call.
 
-        :param request: The incoming request containing the JSON data as a string.
+        :param request: The incoming request containing test parameters.
         :param context: The gRPC context.
         :return: A response message indicating success or error.
         """
         try:
-            logger_cli.info(f"Received ProcessTestData request with data: {request.data}")
-            
-            if request.data:
-                logger_cli.info("Processing test data...")
-                
-                device_name = request.device_name
-                test_parameters = dict(request.test_parameters)
+            # Convert Protobuf object to a Python dictionary
+            def convert_to_dict(proto_obj):
+                """
+                Recursively converts a Protobuf object to a Python dictionary.
+                """
+                if isinstance(proto_obj, dict):
+                    return {k: convert_to_dict(v) for k, v in proto_obj.items()}
+                elif isinstance(proto_obj, list):
+                    return [convert_to_dict(v) for v in proto_obj]
+                elif hasattr(proto_obj, "ListFields"):
+                    return {field.name: convert_to_dict(getattr(proto_obj, field.name)) for field in
+                            proto_obj.DESCRIPTOR.fields}
+                else:
+                    return proto_obj
 
-                test_statistics = self.analytics.process_test_data_influxdb(device_name, test_parameters)
-                
-                return AnalyticsResponse(message="OK")
-            else:
-                return AnalyticsResponse(message="Error: No data provided.")
+            # Extract device name and test parameters
+            device_name = request.device_name
+            test_parameters = convert_to_dict(request.test_parameters)
+
+            logger_cli.error(f"DATOS TEST PARAMETERS: {test_parameters}")
+
+            # Call the analytics function with the converted dictionary
+            self.analytics.process_test_data_influxdb(device_name, test_parameters)
+
+            # Return success response
+            return AnalyticsResponse(message="OK")
+
         except Exception as e:
-            logger_cli.error(f"An error occurred while processing test data: {test_statistics}")
+            logger_cli.error(f"An error occurred while processing test data: {e}")
             return AnalyticsResponse(message="Error")
 
 class Analytics:
@@ -89,12 +107,7 @@ class Analytics:
         self.time_series_db = AnalyticsTimeSeriesDB()
         self.analytics_db = AnalyticsTelemetryDB()
         self.static_db = AnalyticsStaticDB()
-        self.url_influxdb = "http://10.152.183.14:8086"
-        self.token = "my_admin_token"
-        self.org = "uEnergyOrg"
-        self.time_series_bucket = "time_series_db_pruebas"
-        self.telemetry_bucket = "telemetry_db_pruebas"
-        self.static_bucket = "static_db_pruebas"
+        
 
     def test_statistics(self, test_data, test_parameters, all_components):
         times_values = []
@@ -320,35 +333,226 @@ class Analytics:
         pass
 
     def process_test_data_influxdb(self, device_name, test_parameters):
+        logger_cli.info(f"Pocessing test data influx")
         test_data, all_components = self.time_series_db.influx_filtered_data(device_name, test_parameters)
+        logger_cli.info(f"DATOS PROCESS_TEST_DATA_INFLUX: {test_data} y {all_components}")
         test_statistics = self.test_statistics_influxdb(device_name, test_data, test_parameters, all_components)
+        logger_cli.info(f"DATOS TEST_STATISTICS: {test_statistics}")
         self.telemetry_db.save_in_database_influxdb(test_statistics)
         self.static_db.save_data_static(device_name, test_parameters, test_statistics)
 
 class AnalyticsTimeSeriesDB:
     def __init__(self):
-        pass
+        self.url_influxdb = "http://10.152.183.14:8086"
+        self.token = "my_admin_token"
+        self.org = "uEnergyOrg"
+        self.time_series_bucket = "time_series_db_pruebas"
 
     def query_filtered_data(self, test_parameters):
         logger_cli.info("TODO-influxdb: Create this function")
         pass
     
-    def influx_filtered_data(device_name, test_parameters):
-        logger_cli.info("TODO-influxdb: Create this function")
-        pass
+    def influx_filtered_data(self, device_name, test_parameters):
+        results = {}
+        all_components = []
+        rango = math.ceil(test_parameters["interval"] * test_parameters["max_interval"] / (60 * 60 * 24))
+        client = InfluxDBClient(url=self.url_influxdb, token=self.token, org=self.org)
+        query_api = client.query_api()
+
+        bucket = self.time_series_bucket
+        measurement = device_name
+        start_date = test_parameters["start_date"]
+        start_time = test_parameters["start_time"]
+
+        columns_to_check = ["board", "component", "transceiver", "power_supply"]
+        exists = {}
+        for column in columns_to_check:
+            query = f'''
+                from(bucket: "{bucket}")
+                  |> range(start: 0)  
+                  |> filter(fn: (r) => r._measurement == "{measurement}") 
+                  |> keep(columns: ["{column}"]) 
+                  |> group()
+                  |> distinct(column: "{column}")
+                '''
+            result = query_api.query(query=query)
+            exists[column] = [record.get_value() for table in result for record in table]
+
+        board_exists = exists["board"]
+        component_exists = exists["component"]
+        transceiver_exists = exists["transceiver"]
+        powersupply_exists = exists["power_supply"]
+
+        power_supply_power = []
+        for powersupply in powersupply_exists:
+            query = f'''
+                    from(bucket: "{bucket}")
+                        |> range(start: 0)  
+                        |> filter(fn: (r) => r._measurement == "{measurement}") 
+                        |> filter(fn: (r) => r["Inst Info"] == "power-supplies")
+                        |> filter(fn: (r) => r["power-supply"] == "{powersupply}")
+                        |> filter(fn: (r) => r["_field"] == "output_power")
+                            '''
+            result = query_api.query(query=query)
+            if not result:
+                power_supply_power.append("input_power")
+
+        parameters = ["DeviceConfiguration", "Scenario", "TestConfiguration", "Times", "traffic_throughput",
+                      "traffic_packet_size", "power_device"]
+
+        base_query = f'''
+            import "join"
+            startDate = from(bucket: "{bucket}")
+                      |> range(start: -{rango}d)
+                      |> filter(fn: (r) => r["_measurement"] == "{measurement}")
+                      |> filter(fn: (r) => r["_field"] == "StartDate")
+                      |> filter(fn: (r) => r["_value"] == "{start_date}")
+                      //|> rename(columns: {{ "_value": "StartDate" }})
+                      |> keep(columns:["_time","_value"])
+
+                    startTime = from(bucket: "{bucket}")
+                      |> range(start: -{rango}d)
+                      |> filter(fn: (r) => r["_measurement"] == "{measurement}")
+                      |> filter(fn: (r) => r["_field"] == "StartTime")
+                      |> filter(fn: (r) => r["_value"] == "{start_time}")
+                      //|> rename(columns: {{ "_value": "StartTime" }})
+                      |> keep(columns:["_time","_value"])
+                    t1 = join.time(left: startDate, right: startTime, 
+                        method: "inner", 
+                        as: (l, r) => ({{l with StartTime: r._value}}))
+                            |> rename(columns: {{ "_value": "StartDate" }})
+                '''
+        cont = 2
+        for parameter in parameters:
+            base_query = base_query + f'''            
+            {parameter} = from(bucket: "{bucket}")
+              |> range(start: -{rango}d)
+              |> filter(fn: (r) => r["_measurement"] == "{measurement}")
+              |> filter(fn: (r) => r["_field"] == "{parameter}")
+              |> keep(columns:["_time","_value"])
+            
+            t{cont} = join.time(left: t{cont - 1}, right: {parameter}, 
+            method: "inner", 
+            as: (l, r) => ({{l with {parameter}: r._value}}))
+            '''
+            cont += 1
+
+        for board in board_exists:
+            base_query += f'''
+            {board} = from(bucket: "{bucket}")
+              |> range(start: -{rango}d)
+              |> filter(fn: (r) => r["_measurement"] == "{measurement}")
+              |> filter(fn: (r) => r["Inst Info"] == "boards")
+              |> filter(fn: (r) => r["board"] == "{board}")
+              |> filter(fn: (r) => r["_field"] == "power")
+              |> keep(columns:["_time","_value"])
+            t{cont} = join.time(left: t{cont - 1}, right: {board}, 
+                        method: "left", 
+                        as: (l, r) => ({{l with {board}: r._value}}))
+            '''
+            cont += 1
+        for component in component_exists:
+            base_query += f'''
+                   {component} = from(bucket: "{bucket}")
+                     |> range(start: -{rango}d)
+                     |> filter(fn: (r) => r["_measurement"] == "{measurement}")
+                     |> filter(fn: (r) => r["Inst Info"] == "components")
+                     |> filter(fn: (r) => r["component"] == "{component}")
+                     |> filter(fn: (r) => r["_field"] == "power")
+                     |> keep(columns:["_time","_value"])
+                   t{cont} = join.time(left: t{cont - 1}, right: {component}, 
+                               method: "left", 
+                               as: (l, r) => ({{l with {component}: r._value}}))
+                   '''
+            cont += 1
+
+        for transceiver in transceiver_exists:
+            base_query += f'''
+                   {transceiver} = from(bucket: "{bucket}")
+                     |> range(start: -{rango}d)
+                     |> filter(fn: (r) => r["_measurement"] == "{measurement}")
+                     |> filter(fn: (r) => r["Inst Info"] == "transceivers")
+                     |> filter(fn: (r) => r["transceiver"] == "{transceiver}")
+                     |> filter(fn: (r) => r["_field"] == "power")
+                     |> keep(columns:["_time","_value"])
+                   t{cont} = join.time(left: t{cont - 1}, right: {transceiver}, 
+                               method: "left", 
+                               as: (l, r) => ({{l with {transceiver}: r._value}}))
+                   '''
+            cont += 1
+
+        for i, powersupply in enumerate(powersupply_exists):
+            base_query += f'''
+                   {powersupply} = from(bucket: "{bucket}")
+                     |> range(start: -{rango}d)
+                     |> filter(fn: (r) => r["_measurement"] == "{measurement}")
+                     |> filter(fn: (r) => r["Inst Info"] == "power-supplies")
+                     |> filter(fn: (r) => r["power_supply"] == "{powersupply}")
+                     |> filter(fn: (r) => r["_field"] == "{power_supply_power[i]}")
+                     |> keep(columns:["_time","_value"])
+                   t{cont} = join.time(left: t{cont - 1}, right: {powersupply}, 
+                               method: "left", 
+                               as: (l, r) => ({{l with {powersupply}: r._value}}))
+                   '''
+            cont += 1
+
+        final_query = base_query + f'''
+                              t{cont - 1} 
+                            '''
+        try:
+            result = query_api.query(query=final_query)
+            cont = 0
+            if len(result)!=0:
+                for table in result:
+                    # Recorremos cada registro en la tabla
+                    for record in table.records:
+                        record.values.pop('result', None)
+                        record.values.pop('table', None)
+                        dicc = record.values
+                        dicc['name'] = device_name
+                        results[cont] = dicc
+                        cont += 1
+        except Exception as e:
+            logger_cli.info(f"Error: Processing instantaneous data in InfluxDB: {e}")
+
+        client.close()
+        # Devuelve el diccionario
+        all_components = all_components + board_exists
+        all_components = all_components + transceiver_exists
+        all_components = all_components + powersupply_exists
+        all_components = all_components + component_exists
+        all_components.insert(0, 'Device')
+
+        results_filtered = {}
+
+        for key, data in results.items():
+            filtered_data = {}
+            for k, v in data.items():
+                if v is not None:
+                    filtered_data[k] = v
+                elif k in all_components:
+                    all_components.remove(k)
+            results_filtered[key] = filtered_data
+        return results_filtered, all_components
 
 class AnalyticsTelemetryDB:
     def __init__(self):
-        pass
+        self.url_influxdb = "http://10.152.183.14:8086"
+        self.token = "my_admin_token"
+        self.org = "uEnergyOrg"
+        self.telemetry_bucket = "telemetry_db_pruebas"
 
-    def save_in_database_influxdb(test_statistics):
+    def save_in_database_influxdb(self, test_statistics):
         logger_cli.info("TODO-influxdb: Create this function")
         pass
 
 class AnalyticsStaticDB:
     def __init__(self):
-        pass
+        self.url_influxdb = "http://10.152.183.14:8086"
+        self.token = "my_admin_token"
+        self.org = "uEnergyOrg"
+        self.static_bucket = "static_db_pruebas"
 
-    def save_data_static(device_name, test_parameters, test_statistics):
+    def save_data_static(self, device_name, test_parameters, test_statistics):
         logger_cli.info("TODO-influxdb: Create this function")
         pass
