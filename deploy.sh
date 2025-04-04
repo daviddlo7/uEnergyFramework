@@ -1,12 +1,10 @@
 #!/bin/bash
 kubectl delete all --all -n uenergyframework
+kubectl delete pod -n ingress $(kubectl get pods -n ingress --no-headers -o custom-columns=":metadata.name")
 
 # Apply the namespace configuration
 echo "Applying namespace configuration..."
 kubectl apply -f namespace.yaml
-
-echo "Applying namespace configuration..."
-kubectl apply -f ingress.yaml
 
 # Generate gRPC files for all modules
 echo "Generating gRPC-Web files for EnergyCollector (JavaScript)..."
@@ -76,6 +74,9 @@ echo "Importing WebUI (Nginx) image into MicroK8s..."
 microk8s ctr image import webui-nginx-v1.tar
 
 # Apply Kubernetes manifests for all modules in the namespace uenergyframework
+echo "Applying ingress configuration..."
+kubectl apply -f ingress.yaml  -n uenergyframework
+
 echo "Applying Kubernetes manifests for EnergyCollector..."
 microk8s kubectl apply -f ./src/energycollector/energycollector-deployment.yaml -n uenergyframework
 

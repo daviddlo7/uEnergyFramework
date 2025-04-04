@@ -22,9 +22,9 @@ spec:
         pathType: ImplementationSpecific
         backend:
           service:
-            name: webui-service
+            name: webui-nginx-service
             port:
-              number: 8085
+              number: 80
       - path: /database(/|$)(.*)
         pathType: ImplementationSpecific
         backend:
