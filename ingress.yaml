@@ -1,34 +1,40 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: uenergyframework-ingress
+  name: example-ingress
   namespace: uenergyframework
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
-    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
+  ingressClassName: nginx
   rules:
-  - host: uenergyframework.local
+  - host: webui.uenergyframework
     http:
       paths:
-      - path: /grafana(/|$)(.*)
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: grafana-service
-            port:
-              number: 3000
-      - path: /webui(/|$)(.*)
-        pathType: ImplementationSpecific
+      - path: /
+        pathType: Prefix
         backend:
           service:
             name: webui-nginx-service
             port:
               number: 80
-      - path: /database(/|$)(.*)
-        pathType: ImplementationSpecific
+  - host: database.uenergyframework
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
         backend:
           service:
             name: database-service
             port:
               number: 8086
+  - host: grafana.uenergyframework
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana-service
+            port:
+              number: 3000
