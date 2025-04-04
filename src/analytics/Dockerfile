@@ -7,6 +7,8 @@ RUN pip install -r requirements.in
 
 COPY src/analytics/ .
 
+COPY Files /app/Files
+
 EXPOSE 50051
 
 ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python

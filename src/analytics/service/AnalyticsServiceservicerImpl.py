@@ -615,10 +615,10 @@ class AnalyticsStaticDB:
 
     def save_data_static(self, device_name, test_parameters, test_statistics):
         logger_cli.info("Saving static data influxdb")
-        if os.path.exists("../../../Files/static_device_energy_tid.yang"):
-            path = "../../../Files/static_device_energy_tid.yang"
+        if os.path.exists("/app/Files/static_device_energy_tid.yang"):
+            path = "/app/Files/static_device_energy_tid.yang"
         else:
-            path = "Files/static_device_energy_tid.yang"
+            path = "/app/Files/static_device_energy_tid.yang"
 
         static_yang = self.parse_yang_file(path)
         static_yang_device = self.parse_to_yang(device_name, static_yang, test_statistics, test_parameters)
@@ -683,9 +683,182 @@ class AnalyticsStaticDB:
 
 
     def parse_to_yang(self, device_name, static_yang, test_statistics, test_parameters):
-        dicc = test_parameters["devices_static_power_dicc"]
+        #dicc = test_parameters["devices_static_power_dicc"]
+        dicc = {
+                'Huawei': {
+                    'maximum-traffic-throughput': '1Tbps (200Gbps)',
+                    'nominal-power-device': 550,
+                    'power-supply': {
+                        'PSU': {
+                            'PSU Huawei': {
+                                'nominal-power': None
+                            }
+                        }
+                    },
+                    'boards': {
+                        'PIC': {
+                            '2-Port 50GBase/1-Port 100GBase-QSFP28 Physical Interface Card(PIC)': {
+                                'nominal-power': None
+                            },
+                            '10-Port 100/1000Base-X-SFP Physical Interface Card(PIC)':{
+                                'nominal-power': None
+                            },
+                            '4-Port 10GBase LAN/WAN-SFP+ Physical Interface Card(PIC)':{
+                                'nominal-power': None
+                            }
+                        },
+                        'NPU': {
+                            'NPU-1T': {
+                                'nominal-power': None
+                            }
+                        },
+                        'MPU': {
+                            'MPU K1': {
+                                'nominal-power': None
+                            }
+                        }
+                    },
+                    'transceivers': {
+                        '10G': {
+                            'nominal-power': None,
+                            'typical-power': None
+                        },
+                        '100G': {
+                            'nominal-power': 3.5,
+                            'typical-power': 3
+                        },
+                        '400G': {
+                            'nominal-power': 12,
+                            'typical-power': 21
+                        }
+                    }
+                },
+                'Adva': {
+                    'maximum-traffic-throughput': '300Gbps (200Gbps)',
+                    'nominal-power-device': None,
+                    'power-supply': {
+                        'CRXT': {
+                            'CRXT_T0T12A': {
+                                'nominal-power': None
+                            }
+                        }
+                    },
+                    'transceivers': {
+                        '10G': {
+                            'nominal-power': None,
+                            'typical-power': None
+                        },
+                        '100G': {
+                            'nominal-power': 3.5,
+                            'typical-power': 3
+                        },
+                        '400G': {
+                            'nominal-power': 12,
+                            'typical-power': 21
+                        }
+                    }
+                },
+                'Juniper': {
+                    'maximum-traffic-throughput': '4.8Tbps (200Gbps)',
+                    'nominal-power-device': None,
+                    'power-supply': {
+                        'PEM': {
+                            'AC AFO 2200W Power Supply': {
+                                'nominal-power': None
+                            }
+                        }
+
+                    },
+                    'components': {
+                        'RE': {
+                            'nominal-power': None
+                        },
+                        'CB': {
+                            'nominal-power': None
+                        },
+                        'FPC': {
+                            'nominal-power': None
+                        },
+                        'Fan Tray': {
+                            'nominal-power': None
+                        },
+                        'SFB': {
+                            'nominal-power': None
+                        },
+                        'TIB': {
+                            'nominal-power': None
+                        }
+                    },
+                    'transceivers': {
+                        '10G': {
+                            'nominal-power': None,
+                            'typical-power': None
+                        },
+                        '100G': {
+                            'nominal-power': 3.5,
+                            'typical-power': 3
+                        },
+                        '400G': {
+                            'nominal-power': 12,
+                            'typical-power': 21
+                        }
+                    }
+                },
+                'Ufispace': {
+                    'maximum-traffic-throughput': '4.8Tbps (200Gbps)',
+                    'nominal-power-device': None,
+                    'power-supply': {
+                        'PSU': {
+                            'AM-2A02P10': {
+                                'nominal-power': None
+                            }
+                        }
+                    },
+                    'transceivers': {
+                        '10G': {
+                            'nominal-power': None,
+                            'typical-power': None
+                        },
+                        '100G': {
+                            'nominal-power': 3.5,
+                            'typical-power': 3
+                        },
+                        '400G': {
+                            'nominal-power': 12,
+                            'typical-power': 21
+                        }
+                    }
+                },
+                'Cisco': {
+                    'maximum-traffic-throughput': '',
+                    'nominal-power-device': None,
+                    'power-supply': {
+                        'PSU': {
+                            'PM': {
+                                'nominal-power': None
+                            }
+                        }
+                    },
+                    'transceivers': {
+                        '10G': {
+                            'nominal-power': None,
+                            'typical-power': None
+                        },
+                        '100G': {
+                            'nominal-power': 3.5,
+                            'typical-power': 3
+                        },
+                        '400G': {
+                            'nominal-power': 12,
+                            'typical-power': 21
+                        }
+                    }
+                }
+        }
+
         test_parameters_dict_components = test_parameters["config_data_devices"][device_name]
         efficiency = []
+
         configuration = test_statistics['Configuration'].split(";")
         configuration_transceivers = [item for item in configuration if
                                       "xT" in item and item[item.index("xT") - 1]]
@@ -714,6 +887,7 @@ class AnalyticsStaticDB:
                 if "xT" in item:
                     idx = item.index("xT") + 2  # El índice después de "xT"
                     configuration_transceivers[i] = item[idx:] #elimina "xxT"
+
 
         for key in test_statistics.keys():
             if key != 'Configuration' and key != 'Name' and key != 'Traffic Test' and key != 'Start Date' and key != 'Start Time':
@@ -811,7 +985,7 @@ class AnalyticsStaticDB:
                             elif 'Cisco' in device_name:
                                 nombre = 'Cisco'
                             typical_power['Transceivers'][configuration_transceivers[0]].append(dicc[nombre]['transceivers'][configuration_transceivers[0]])
-
+        
         for key in static_yang['device'].keys():
             match key:
                 case 'name':
@@ -828,6 +1002,7 @@ class AnalyticsStaticDB:
                         static_yang['device'][key] = dicc['Adva']['maximum-traffic-throughput']
                     elif 'Huawei' in device_name:
                         static_yang['device'][key] = dicc['Huawei']['maximum-traffic-throughput']
+            
 
                 case 'max-power':
                     if len(max_power) > 0:
@@ -963,6 +1138,7 @@ class AnalyticsStaticDB:
                             static_yang['device'][key][0]['type'] = type
                             static_yang['device'][key][0]['typical-power'] = float(typical_power['Transceivers'][element][0]['typical-power'])
                             static_yang['device'][key][0]['nominal-power'] = typical_power['Transceivers'][element][0]['nominal-power']
+                
 
         return static_yang
 
