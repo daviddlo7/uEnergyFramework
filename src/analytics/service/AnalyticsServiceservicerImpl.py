@@ -105,7 +105,7 @@ class Analytics:
 
     def __init__(self):
         self.time_series_db = AnalyticsTimeSeriesDB()
-        self.analytics_db = AnalyticsTelemetryDB()
+        self.telemetry_db = AnalyticsTelemetryDB()
         self.static_db = AnalyticsStaticDB()
         
 
@@ -211,23 +211,23 @@ class Analytics:
         components_dict = {component: {} for component in all_components}
         test_statistics = {
             'Name': device_name,
-            'Configuration': test_parameters.configuration[device_name],
-            'Traffic Test': test_parameters.traffic_configuration,
-            'Start Date': test_parameters.start_date,
-            'Start Time': test_parameters.start_time
+            'Configuration': test_parameters["configuration"][device_name],
+            'Traffic Test': test_parameters["traffic_configuration"],
+            'Start Date': test_parameters["start_date"],
+            'Start Time': test_parameters["start_time"]
         }
 
         start_time = None
 
-        if test_parameters.traffic_change is None and test_parameters.packet_change is None:
-            interval = test_parameters.max_interval * test_parameters.interval
+        if test_parameters["traffic_change"] is None and test_parameters["packet_change"] is None:
+            interval = test_parameters["max_interval"] * test_parameters["interval"]
         else:
-            if test_parameters.traffic_change is None:
-                interval = test_parameters.packet_change
-            elif test_parameters.packet_change is None:
-                interval = test_parameters.traffic_change
+            if test_parameters["traffic_change"] is None:
+                interval = test_parameters["packet_change"]
+            elif test_parameters["packet_change"] is None:
+                interval = test_parameters["traffic_change"]
             else:
-                interval = min(test_parameters.traffic_change, test_parameters.packet_change)
+                interval = min(test_parameters["traffic_change"], test_parameters["packet_change"])
 
         for key in test_data.keys():
             record = test_data[key]
@@ -243,7 +243,7 @@ class Analytics:
                 start_time = times_value
 
             if max(times_values) > interval * n_intervalos or key == len(test_data.keys()) - 1:
-                if max(times_values) > interval * test_parameters.max_interval:
+                if max(times_values) > interval * test_parameters["max_interval"]:
                     break
                 start_interval = round((math.floor(times_values[0] / interval) * interval) / 60, 2)
                 end_interval = round((math.ceil(times_values[-1] / interval) * interval) / 60, 2)
@@ -255,10 +255,10 @@ class Analytics:
                             "StartTime": start_interval,
                             "EndTime": end_interval,
                             "Time Interval": f"{start_interval}-{end_interval}",
-                            "Traffic": test_parameters.traffic if test_parameters.traffic_change is None else
-                            test_parameters.traffic[n_intervalos - 1],
-                            "PacketSize": test_parameters.packet_size if test_parameters.packet_change is None else
-                            test_parameters.packet_size[n_intervalos - 1]
+                            "Traffic": test_parameters["traffic"] if test_parameters["traffic_change"] is None else
+                            test_parameters["traffic"][n_intervalos - 1],
+                            "PacketSize": test_parameters["packet_size"] if test_parameters["packet_change"] is None else
+                            test_parameters["packet_size"][n_intervalos - 1]
                         }
                     except IndexError:
                         break
@@ -543,8 +543,68 @@ class AnalyticsTelemetryDB:
         self.telemetry_bucket = "telemetry_db_pruebas"
 
     def save_in_database_influxdb(self, test_statistics):
-        logger_cli.info("TODO-influxdb: Create this function")
-        pass
+        logger_cli.info("Saving in database telemetry influxdb")
+        client = InfluxDBClient(url=self.url_influxdb, token=self.token, org=self.org)
+        utc_now = datetime.now(ZoneInfo('UTC'))
+        current_time = utc_now.astimezone(ZoneInfo('Europe/Berlin'))
+
+        points = []
+        for key in test_statistics.keys():
+            if key == "Name" or key == "Configuration" or key == "Traffic Test" or key == "Start Date" or key == "Start Time":
+                points.append(
+                    Point(test_statistics["Name"])
+                    .field(key, test_statistics[key])
+                    .time(current_time, WritePrecision.NS)
+                )
+            else:
+                dicc = test_statistics[key]
+                for tag in dicc.keys():
+                    if tag == "StartTime" or tag == "EndTime" or tag == "Time Interval" or tag == "Traffic" or tag == "PacketSize":
+                        points.append(
+                            Point(test_statistics["Name"])
+                            .tag("Intervals", key)
+                            .field(tag, dicc[tag])
+                            .time(current_time, WritePrecision.NS)
+                        )
+                    else:
+                        if tag == "Device":
+                            detail = dicc[tag]
+                            for field in detail.keys():
+                                points.append(
+                                    Point(test_statistics["Name"])
+                                    .tag("Intervals", key)
+                                    .tag("Power", tag)
+                                    .field(field, detail[field])
+                                    .time(current_time, WritePrecision.NS)
+                                )
+                        else:
+                            if tag == "Boards":
+                                etiqueta = "Board"
+                            elif tag == "Components":
+                                etiqueta = "Component"
+                            elif tag == "Transceivers":
+                                etiqueta = "Transceiver"
+                            else:
+                                etiqueta = "PowerSupply"
+                            detail = dicc[tag]
+                            for field in detail.keys():
+                                dictionary = detail[field]
+                                for clave in dictionary.keys():
+                                    points.append(
+                                        Point(test_statistics["Name"])
+                                        .tag("Intervals", key)
+                                        .tag("Power", tag)
+                                        .tag(etiqueta, field)
+                                        .field(clave, dictionary[clave])
+                                        .time(current_time, WritePrecision.NS)
+                                    )
+        write_api = client.write_api(write_options=SYNCHRONOUS)
+        try:
+            write_api.write(bucket=self.telemetry_bucket, org=self.org, record=points)
+        except Exception as e:
+            logger_cli.info(f"Error: Saving telemetry data in InfluxDB: {e}")
+
+        client.close()
 
 class AnalyticsStaticDB:
     def __init__(self):
@@ -554,5 +614,420 @@ class AnalyticsStaticDB:
         self.static_bucket = "static_db_pruebas"
 
     def save_data_static(self, device_name, test_parameters, test_statistics):
-        logger_cli.info("TODO-influxdb: Create this function")
-        pass
+        logger_cli.info("Saving static data influxdb")
+        if os.path.exists("../../../Files/static_device_energy_tid.yang"):
+            path = "../../../Files/static_device_energy_tid.yang"
+        else:
+            path = "Files/static_device_energy_tid.yang"
+
+        static_yang = self.parse_yang_file(path)
+        static_yang_device = self.parse_to_yang(device_name, static_yang, test_statistics, test_parameters)
+        self.save_static_yang_influxdb(static_yang_device)
+
+    
+    def save_static_yang_influxdb(self, dict_yang):
+        client = InfluxDBClient(url=self.url_influxdb, token=self.token, org=self.org)
+        utc_now = datetime.now(ZoneInfo('UTC'))
+        current_time = utc_now.astimezone(ZoneInfo('Europe/Berlin'))
+
+        points = []
+        #dict = dict_yang['device']['device']
+        for field in dict_yang['device'].keys():
+            if field == 'power-supply' or field == 'components' or field == 'boards' or field == 'transceivers':
+                for element in dict_yang['device'][field]:
+                    for campo in element.keys():
+                        if field == 'power-supply':
+                            points.append(
+                                Point(dict_yang['device']['name'])
+                                .tag('power_supply', element['type'])
+                                .tag('name', element['name'])
+                                .field(campo, element[campo])
+                                .time(current_time, WritePrecision.NS)
+                            )
+                        else:
+                            points.append(
+                                Point(dict_yang['device']['name'])
+                                .tag(field, element['type'])
+                                .tag('name', element['name'])
+                                .field(campo, element[campo])
+                                .time(current_time, WritePrecision.NS)
+                            )
+
+
+            else:
+                if field == 'typical-power':
+                    points.append(
+                        Point(dict_yang['device']['name'])
+                        .field('typical-power-device', dict_yang['device'][field])
+                        .time(current_time, WritePrecision.NS)
+                    )
+                elif field == 'nominal-power':
+                    points.append(
+                        Point(dict_yang['device']['name'])
+                        .field('nominal-power-device', dict_yang['device'][field])
+                        .time(current_time, WritePrecision.NS)
+                    )
+                else:
+                    points.append(
+                        Point(dict_yang['device']['name'])
+                        .field(field, dict_yang['device'][field])
+                        .time(current_time, WritePrecision.NS)
+                    )
+
+        write_api = client.write_api(write_options=SYNCHRONOUS)
+        try:
+            write_api.write(bucket=self.static_bucket, org=self.org, record=points)
+        except Exception as e:
+            logger_cli.info(f"Error: Saving static data in InfluxDB: {e}")
+        client.close()
+
+
+    def parse_to_yang(self, device_name, static_yang, test_statistics, test_parameters):
+        dicc = test_parameters["devices_static_power_dicc"]
+        test_parameters_dict_components = test_parameters["config_data_devices"][device_name]
+        efficiency = []
+        configuration = test_statistics['Configuration'].split(";")
+        configuration_transceivers = [item for item in configuration if
+                                      "xT" in item and item[item.index("xT") - 1]]
+        number_configuration_transceivers = []
+        for value in configuration_transceivers:
+            number_configuration_transceivers.append(
+                int(value[value.index("xT") - 1]))  #devuelve el numero de los transveivers conectados
+
+        max_power = []
+        typical_power = {
+            'Device': [],
+            'Boards': {},
+            'Components': {},
+            'Transceivers': {},
+            'PowerSupplies': {}
+        }
+        configuration = [item for item in configuration if item not in configuration_transceivers]
+        configuration[:] = [
+            item for item in configuration
+            if not any(keyword in item for keyword in
+                       ['PSU', 'PowerSupply', 'PS', 'PEM', 'CRXT', 'RE', 'CB', 'FPC', 'FanTray', 'SFB', 'TIB','PM'])
+        ]
+
+        for item in configuration_transceivers:
+            for i, item in enumerate(configuration_transceivers):
+                if "xT" in item:
+                    idx = item.index("xT") + 2  # El índice después de "xT"
+                    configuration_transceivers[i] = item[idx:] #elimina "xxT"
+
+        for key in test_statistics.keys():
+            if key != 'Configuration' and key != 'Name' and key != 'Traffic Test' and key != 'Start Date' and key != 'Start Time':
+                if test_statistics[key]['EndTime'] - test_statistics[key]['StartTime'] >= 30.0:
+                    if test_statistics[key]['PacketSize'] > 0 and test_statistics[key]['Traffic'] > 0:
+                        efficiency.append(test_statistics[key]['Device']['Average'] / (
+                                    test_statistics[key]['Traffic'] / test_statistics[key]['PacketSize']))
+                    for field in test_statistics[key]:
+                        if isinstance(test_statistics[key][field], dict):
+                            if field == 'Device':
+                                if 'Huawei' in device_name:
+                                    if 'MPU_11' in configuration and len(configuration)==1 and sum(number_configuration_transceivers) == 0 and \
+                                            test_statistics[key]['Traffic'] == 0:  #nada conectado ni trafico
+                                        typical_power[field].append(test_statistics[key][field]['Average'])
+                                else:
+                                    if len(configuration)==0 and sum(number_configuration_transceivers) == 0 and test_statistics[key][
+                                        'Traffic'] == 0:
+                                        typical_power[field].append(test_statistics[key][field]['Average'])
+
+                                if len(configuration_transceivers) == 1 and "100G" in configuration_transceivers and sum(number_configuration_transceivers) == 2 and test_statistics[key]['Traffic'] == 200 and test_statistics[key][
+                                    'PacketSize'] == 62:  # condicion de maximo trafico
+                                    max_power.append(test_statistics[key][field]['Average'])
+
+                            else:
+                                if 'Huawei' in device_name:
+                                    if 'MPU_11' in configuration and len(configuration) == 1 and sum(number_configuration_transceivers) == 0 and \
+                                            test_statistics[key]['Traffic'] == 0 and test_statistics[key]['PacketSize'] == 0:  # condicion de maximo trafico:  # nada conectado ni trafico
+                                        for element in test_statistics[key][field].keys():
+                                            if element not in configuration_transceivers:
+                                                typical_power[field].setdefault(element, [])
+                                                typical_power[field][element].append(
+                                                    test_statistics[key][field][element]['Average'])
+
+                                    else:
+                                        break
+                                else:
+                                    if sum(number_configuration_transceivers) == 0 and test_statistics[key][
+                                        'Traffic'] == 0 and test_statistics[key]['PacketSize'] == 0:
+                                        for element in test_statistics[key][field].keys():
+                                            if element not in configuration_transceivers:
+                                                typical_power[field].setdefault(element, [])
+                                                typical_power[field][element].append(
+                                                    test_statistics[key][field][element]['Average'])
+
+                    if 'Huawei' in device_name:
+                        if len(configuration) == 2 and 'MPU_11' in configuration and sum(1 for item in configuration if item.startswith(('NPU'))) == 1 and sum(
+                                number_configuration_transceivers) == 0 and test_statistics[key]['Traffic'] == 0 and \
+                                test_statistics[key]['PacketSize'] == 0:
+                            unique_pic = [item for item in configuration if item.startswith(('NPU'))]
+                            typical_power['Boards'].setdefault(unique_pic[0], [])
+                            typical_power['Boards'][unique_pic[0]].append(
+                                test_statistics[key]['Boards'][unique_pic[0]]['Average'])
+
+                        if len(configuration) == 3 and 'MPU_11' in configuration and sum(
+                                1 for item in configuration if item.startswith(('PIC', 'NPU'))) == 2 and \
+                                test_statistics[key]['Traffic'] == 0 and test_statistics[key]['PacketSize'] == 0:
+                            boards = [item for item in configuration if item.startswith(('PIC', 'NPU'))]
+                            if boards[0].startswith('PIC'):
+                                if boards[1].startswith('NPU'):
+                                    if sum(number_configuration_transceivers) == 1:
+                                        typical_power['Transceivers'].setdefault(configuration_transceivers[0], [])
+                                        #typical_power['Transceivers'][configuration_transceivers[0]].append(test_statistics[key]['Transceivers'][configuration_transceivers[0]]['Average'])
+                                        # sacar el consumo tipico de los transceivers mediante el diccionario de test_parameters.
+                                        typical_power['Transceivers'][configuration_transceivers[0]].append(dicc['Huawei']['transceivers'][configuration_transceivers[0]])
+                                    if sum(number_configuration_transceivers) == 0:
+                                        unique_pic = [item for item in configuration if item.startswith(('PIC'))]
+                                        typical_power['Boards'].setdefault(unique_pic[0], [])
+                                        typical_power['Boards'][unique_pic[0]].append(test_statistics[key]['Boards'][unique_pic[0]]['Average'])
+
+
+                            if boards[1].startswith('PIC'):
+                                if boards[0].startswith('NPU'):
+                                    if sum(number_configuration_transceivers) == 1:
+                                        typical_power['Transceivers'].setdefault(configuration_transceivers[0], [])
+                                        # typical_power['Transceivers'][configuration_transceivers[0]].append(test_statistics[key]['Transceivers'][configuration_transceivers[0]]['Average'])
+                                        # sacar el consumo tipico de los transceivers mediante el diccionario de test_parameters.
+                                        typical_power['Transceivers'][configuration_transceivers[0]].append(
+                                            dicc['Huawei']['transceivers'][configuration_transceivers[0]])
+                                    if sum(number_configuration_transceivers) == 0:
+                                        unique_pic = [item for item in configuration if item.startswith(('PIC'))]
+                                        typical_power['Boards'].setdefault(unique_pic[0], [])
+                                        typical_power['Boards'][unique_pic[0]].append(
+                                            test_statistics[key]['Boards'][unique_pic[0]]['Average'])
+
+                    else:
+                        if sum(number_configuration_transceivers) == 1 and test_statistics[key][
+                            'Traffic'] == 0 and test_statistics[key]['PacketSize'] == 0:
+                            typical_power['Transceivers'].setdefault(configuration_transceivers[0], [])
+                            if 'Adva' in device_name:
+                                nombre = 'Adva'
+                            elif 'Ufispace' in device_name:
+                                nombre = 'Ufispace'
+                            elif 'Juniper' in device_name:
+                                nombre = 'Juniper'
+                            elif 'Cisco' in device_name:
+                                nombre = 'Cisco'
+                            typical_power['Transceivers'][configuration_transceivers[0]].append(dicc[nombre]['transceivers'][configuration_transceivers[0]])
+
+        for key in static_yang['device'].keys():
+            match key:
+                case 'name':
+                    static_yang['device'][key] = device_name
+                case 'typical-power':
+                    if len(typical_power['Device']) > 0:
+                        static_yang['device'][key] = float(sum(typical_power['Device'])) / len(typical_power['Device'])
+                case 'maximum-traffic-throughput':
+                    if 'Ufispace' in device_name:
+                        static_yang['device'][key] = dicc['Ufispace']['maximum-traffic-throughput']
+                    elif 'Juniper' in device_name:
+                        static_yang['device'][key] = dicc['Juniper']['maximum-traffic-throughput']
+                    elif 'Adva' in device_name:
+                        static_yang['device'][key] = dicc['Adva']['maximum-traffic-throughput']
+                    elif 'Huawei' in device_name:
+                        static_yang['device'][key] = dicc['Huawei']['maximum-traffic-throughput']
+
+                case 'max-power':
+                    if len(max_power) > 0:
+                        static_yang['device'][key] = float(sum(max_power)) / len(max_power)
+                case 'efficiency':
+                    if len(efficiency) > 0:
+                        static_yang['device'][key] = float(sum(efficiency)) / len(efficiency)
+                case 'nominal-power':
+                    if 'Ufispace' in device_name:
+                        static_yang['device'][key] = dicc['Ufispace']['nominal-power-device']
+                    elif 'Juniper' in device_name:
+                        static_yang['device'][key] = dicc['Juniper']['nominal-power-device']
+                    elif 'Adva' in device_name:
+                        static_yang['device'][key] = dicc['Adva']['nominal-power-device']
+                    elif 'Huawei' in device_name:
+                        static_yang['device'][key] = dicc['Huawei']['nominal-power-device']
+
+                case 'power-supply':
+                    cont = 0
+                    for element in typical_power['PowerSupplies'].keys():
+                        if element in test_parameters_dict_components.keys():
+                            name = test_parameters_dict_components[element]['name']
+                            type = test_parameters_dict_components[element]['type']
+                            if (not any(d['name'] == name for d in static_yang['device'][key]) or not any(
+                                    d['type'] == type for d in static_yang['device'][key])) and cont != 0:
+                                static_yang['device'][key].append(copy.deepcopy(static_yang['device'][key][0]))
+                                static_yang['device'][key][len(static_yang['device'][key]) - 1]['typical-power'] = []
+                            cont = len(static_yang['device'][key]) - 1
+
+                            static_yang['device'][key][cont]['name'] = name
+                            static_yang['device'][key][cont]['type'] = type
+                            if static_yang['device'][key][cont]['typical-power'] is None:
+                                static_yang['device'][key][cont]['typical-power'] = []
+                            static_yang['device'][key][cont]['typical-power'] += typical_power['PowerSupplies'][element]
+
+                            if 'Ufispace' in device_name:
+                                static_yang['device'][key][cont]['nominal-power'] = dicc['Ufispace']['power-supply'][type][name][
+                                    'nominal-power']
+                            elif 'Juniper' in device_name:
+                                static_yang['device'][key][cont]['nominal-power'] = dicc['Juniper']['power-supply'][type][name][
+                                    'nominal-power']
+                            elif 'Adva' in device_name:
+                                static_yang['device'][key][cont]['nominal-power'] = dicc['Adva']['power-supply'][type][name][
+                                    'nominal-power']
+                            elif 'Huawei' in device_name:
+                                static_yang['device'][key][cont]['nominal-power'] = dicc['Huawei']['power-supply'][type][name][
+                                    'nominal-power']
+                            cont += 1
+                    for i in range(len(static_yang['device'][key])):
+                        if static_yang['device'][key][i]['typical-power'] is not None:
+                            static_yang['device'][key][i]['typical-power'] = float(sum(static_yang['device'][key][i]['typical-power'])) / len(static_yang['device'][key][i]['typical-power'])
+
+                case 'boards':
+                    cont = 0
+                    for element in typical_power['Boards'].keys():
+                        if element in test_parameters_dict_components.keys():
+                            name = test_parameters_dict_components[element]['name']
+                            type = test_parameters_dict_components[element]['type']
+                            if (not any(d['name'] == name for d in static_yang['device'][key]) or not any(
+                                    d['type'] == type for d in static_yang['device'][key])) and cont != 0:
+                                static_yang['device'][key].append(copy.deepcopy(static_yang['device'][key][0]))
+                                static_yang['device'][key][len(static_yang['device'][key]) - 1]['typical-power'] = []
+                            cont = len(static_yang['device'][key]) - 1
+
+                            static_yang['device'][key][cont]['name'] = name
+                            static_yang['device'][key][cont]['type'] = type
+                            if static_yang['device'][key][cont]['typical-power'] is None:
+                                static_yang['device'][key][cont]['typical-power'] = []
+                            static_yang['device'][key][cont]['typical-power'] += typical_power['Boards'][element]
+                            if 'Ufispace' in device_name:
+                                static_yang['device'][key][cont]['nominal-power'] = dicc['Ufispace']['boards'][type][name][
+                                    'nominal-power']
+                            elif 'Juniper' in device_name:
+                                static_yang['device'][key][cont]['nominal-power'] = dicc['Juniper']['boards'][type][name][
+                                    'nominal-power']
+                            elif 'Adva' in device_name:
+                                static_yang['device'][key][cont]['nominal-power'] = dicc['Adva']['boards'][type][name][
+                                    'nominal-power']
+                            elif 'Huawei' in device_name:
+                                static_yang['device'][key][cont]['nominal-power'] = dicc['Huawei']['boards'][type][name][
+                                    'nominal-power']
+                            cont += 1
+                    for i in range(len(static_yang['device'][key])):
+                        if static_yang['device'][key][i]['typical-power'] is not None:
+                            static_yang['device'][key][i]['typical-power'] = float(
+                                sum(static_yang['device'][key][i]['typical-power'])) / len(
+                                static_yang['device'][key][i]['typical-power'])
+
+                case 'components':
+                    cont = 0
+                    for element in typical_power['Components'].keys():
+                        if element in test_parameters_dict_components.keys():
+                            name = test_parameters_dict_components[element]['name']
+                            type = test_parameters_dict_components[element]['type']
+                            if (not any(d['name'] == name for d in static_yang['device'][key]) or not any(
+                                    d['type'] == type for d in static_yang['device'][key])) and cont != 0:
+                                static_yang['device'][key].append(copy.deepcopy(static_yang['device'][key][0]))
+                                static_yang['device'][key][len(static_yang['device'][key]) - 1]['typical-power'] = []
+                            cont = len(static_yang['device'][key]) - 1
+
+                            static_yang['device'][key][cont]['name'] = name
+                            static_yang['device'][key][cont]['type'] = type
+                            if static_yang['device'][key][cont]['typical-power'] is None:
+                                static_yang['device'][key][cont]['typical-power'] = []
+                            static_yang['device'][key][cont]['typical-power'] += typical_power['Components'][element]
+
+                            if 'Ufispace' in device_name:
+                                static_yang['device'][key][cont]['nominal-power'] = dicc['Ufispace']['components'][type][
+                                    'nominal-power']
+                            elif 'Juniper' in device_name:
+                                static_yang['device'][key][cont]['nominal-power'] = dicc['Juniper']['components'][type][
+                                    'nominal-power']
+                            elif 'Adva' in device_name:
+                                static_yang['device'][key][cont]['nominal-power'] = dicc['Adva']['components'][type][
+                                    'nominal-power']
+                            elif 'Huawei' in device_name:
+                                static_yang['device'][key][cont]['nominal-power'] = dicc['Huawei']['components'][type][
+                                    'nominal-power']
+                            cont += 1
+                    for i in range(len(static_yang['device'][key])):
+                        if static_yang['device'][key][i]['typical-power'] is not None:
+                            static_yang['device'][key][i]['typical-power'] = float(
+                                sum(static_yang['device'][key][i]['typical-power'])) / len(
+                                static_yang['device'][key][i]['typical-power'])
+
+                case 'transceivers': #only one transveicer for typical consumption
+                    for element in typical_power['Transceivers'].keys():
+                        unique_transceiver = [transceiver for transceiver in test_parameters_dict_components.keys() if transceiver.startswith("TRX")]
+                        name = test_parameters_dict_components[unique_transceiver[0]]['name']
+                        type = test_parameters_dict_components[unique_transceiver[0]]['type']
+                        if type == element:
+                            static_yang['device'][key][0]['name'] = name
+                            static_yang['device'][key][0]['type'] = type
+                            static_yang['device'][key][0]['typical-power'] = float(typical_power['Transceivers'][element][0]['typical-power'])
+                            static_yang['device'][key][0]['nominal-power'] = typical_power['Transceivers'][element][0]['nominal-power']
+
+        return static_yang
+
+    def parse_yang_file(self, filename):
+            """
+                    additional function to read the .yang file and define it in a python dictionary with value None
+                    Args:                            
+                    filename: the path containing the .yang file
+
+                    Returns: a dictionary with value None
+
+            """
+            with open(filename, 'r') as file:
+                lines = file.readlines()
+
+            lines_len = len(lines)
+            i = 0
+            dict = {}
+            level_stack = []
+            salir = 0
+            in_list = 0
+            while i < lines_len:
+                jumps = 1
+                line = lines[i].strip()
+                current_dict = dict
+                for level in level_stack:
+                    current_dict = current_dict[level]
+                    if isinstance(current_dict, list):
+                        if len(current_dict) == 1:
+                            current_dict = current_dict[0]
+                            break
+                if line.startswith('container'):
+                    variable = line.split()[1]
+                    if not dict:
+                        dict[variable] = {}
+                        level_stack.append(variable)
+                    else:
+                        current_dict[variable] = {}
+                        level_stack.append(variable)
+                elif line.startswith('leaf'):
+                    variable = line.split()[1]
+                    current_dict[variable] = None
+                    while True:
+                        i += 1
+                        line = lines[i]
+                        if line.strip() == '}':
+                            if lines[i + 1].strip() == '}':
+                                salir += 1
+                            break
+                        elif 'type' in line and '{' in line and 'union' not in line:
+                            i += 3
+                elif line.startswith('list'):
+                    variable = line.split()[1]
+                    current_dict[variable] = []
+                    current_dict[variable].append({})
+                    level_stack.append(variable)
+                    level_stack.append(0)
+                    in_list = 1
+
+                if salir == 1:
+                    if in_list == 1:
+                        level_stack.pop()
+                        in_list = 0
+                    level_stack.pop()
+                    salir = 0
+                i += 1
+
+            return dict

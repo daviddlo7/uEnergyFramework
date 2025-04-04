@@ -140,7 +140,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
             traffic_configuration = "default"
             escenario = "default"
-            total_time = 0.1
+            total_time = 1
             traffic_change = None
             traffic = 0
             packet_change = None
