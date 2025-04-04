@@ -140,7 +140,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
             traffic_configuration = "default"
             escenario = "default"
-            total_time = 1
+            total_time = 0.1
             traffic_change = None
             traffic = 0
             packet_change = None
@@ -194,6 +194,8 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             return response.message
         except Exception as e:
             default_logger.error(f"Failed to call CheckConnection on Analytics service: {e}")
+            return "Error calling CheckConnection"
+
             return "Error calling CheckConnection"
 
     def analytics_process_test_data(self, device_name, test_parameters):
@@ -299,10 +301,12 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             logger_cli.info(f"Response from Analytics service: {response.message}")
 
             # Close the channel
+
+            logger_cli.info(f"Response from Analytics service: {response.message}")
+
+            # Close the channel
             channel.close()
-
             return response.message
-
         except Exception as e:
             logger_cli.error(f"Error calling ProcessTestData on Analytics service: {e}")
             return "Error calling ProcessTestData"
