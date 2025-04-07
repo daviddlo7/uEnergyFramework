@@ -48,7 +48,11 @@ spec:
   selector:
     app: webui
   ports:
-  - name: grpc
+  - name: flask-port
     protocol: TCP
-    port: 50051
-    targetPort: 50051
+    port: 50052       # Puerto para Flask
+    targetPort: 50052 # Puerto donde escucha Flask dentro del contenedor
+  - name: grpc-port
+    protocol: TCP
+    port: 50053       # Puerto para gRPC
+    targetPort: 50053 # Puerto donde escucha gRPC dentro del contenedor

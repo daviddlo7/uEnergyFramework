@@ -16,7 +16,6 @@ spec:
       containers:
       - name: energycollector-container
         image: energycollector:v1
-        imagePullPolicy: Never
         ports:
           - containerPort: 50051 
           - containerPort: 8000 

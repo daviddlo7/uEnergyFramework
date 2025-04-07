@@ -1,20 +1,43 @@
 FROM python:3.10-slim
 
+# Instalar dependencias del sistema, Node.js y npm
+RUN apt-get update && apt-get install -y \
+    curl \
+    net-tools \
+    gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -L -o grpcurl.tar.gz https://github.com/fullstorydev/grpcurl/releases/download/v1.8.7/grpcurl_1.8.7_linux_x86_64.tar.gz && \
+    tar -xzf grpcurl.tar.gz && \
+    mv grpcurl /usr/local/bin/ && \
+    chmod +x /usr/local/bin/grpcurl && \
+    rm -f grpcurl.tar.gz LICENSE
+
+# Establecer el directorio de trabajo
 WORKDIR /app/src
 
+# Copiar dependencias de Python
 COPY src/webui/requirements.in .
-RUN pip install -r requirements.in
+RUN pip install --no-cache-dir -r requirements.in
 
+# Copiar dependencias de Node.js
+COPY package*.json ./
+RUN npm install
+
+# Copiar el archivo .proto necesario
 COPY src/energycollector/energycollector_pb2.py /app/src/
 COPY src/energycollector/energycollector_pb2_grpc.py /app/src/
+COPY src/energycollector/energycollector.proto /app/src/energycollector/
 
 COPY src/analytics/analytics_pb2.py /app/src/
 COPY src/analytics/analytics_pb2_grpc.py /app/src/
 
+# Copiar el resto del código fuente
 COPY src/webui/ .
 
-EXPOSE 50051
+EXPOSE 50052
+EXPOSE 50053 
 
-ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
-
-ENTRYPOINT ["python", "-m", "service.__main__"]
+CMD ["python", "-m", "service.WebUIService"]
