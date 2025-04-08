@@ -335,8 +335,9 @@ class Analytics:
 
     def process_test_data_influxdb(self, device_name, test_parameters):
         test_data, all_components = self.time_series_db.influx_filtered_data(device_name, test_parameters)
-        logger_cli.info(f"DATOS PROCESS_TEST_DATA_INFLUX: {test_data} y {all_components}")
+        logger_cli.info(f"Test Data and All Components: {test_data} y {all_components}")
         test_statistics = self.test_statistics_influxdb(device_name, test_data, test_parameters, all_components)
+        logger_cli.info(f"TestStatistics: {test_data} y {all_components}")
         self.telemetry_db.save_in_database_influxdb(test_statistics)
         self.static_db.save_data_static(device_name, test_parameters, test_statistics)
 
