@@ -140,10 +140,10 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
             traffic_configuration = "default"
             escenario = "default"
-            total_time = 0.1
-            traffic_change = None
+            total_time = 1
+            traffic_change = 0
             traffic = 0
-            packet_change = None
+            packet_change = 0
             packet_size = 0
             db = "pruebas"
             db_type = "influxdb"
@@ -267,12 +267,12 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
                 escenario=test_parameters.escenario,
                 interval=test_parameters.interval,
                 max_interval=test_parameters.max_interval,
-                traffic_change=test_parameters.traffic_change or 0.0,
-                traffic=test_parameters.traffic or 0.0,
-                actual_traffic=test_parameters.actual_traffic or 0.0,
-                packet_change=test_parameters.packet_change or 0.0,
-                packet_size=test_parameters.packet_size or 0,
-                actual_packet_size=test_parameters.actual_packet_size or 0,
+                traffic_change=test_parameters.traffic_change,
+                traffic=test_parameters.traffic,
+                actual_traffic=test_parameters.actual_traffic,
+                packet_change=test_parameters.packet_change,
+                packet_size=test_parameters.packet_size,
+                actual_packet_size=test_parameters.actual_packet_size,
                 initial_time=float(test_parameters.initial_time),
                 initial_datetime=str(test_parameters.initial_datetime),
                 start_date=test_parameters.start_date,
@@ -294,7 +294,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
             # Call the remote method
             logger_cli.info("Sending request:")
-            logger_cli.info(MessageToDict(request))
+            logger_cli.info(MessageToDict(request, including_default_value_fields=True))
 
             response = stub.ProcessTestData(request)
 
@@ -844,7 +844,7 @@ class Reader:
         actual_time = float("{:.1f}".format(time.time() - test_parameters.initial_time))
         throughput = 0
         packet_size = 0
-        if test_parameters.traffic_change is not None:
+        if test_parameters.traffic_change != 0:
             if actual_time < (test_parameters.traffic_change * (test_parameters.actual_traffic + 1)):
                 throughput = test_parameters.traffic[test_parameters.actual_traffic]
             else:
@@ -854,7 +854,7 @@ class Reader:
         else:
             throughput = test_parameters.traffic
 
-        if test_parameters.packet_change is not None:
+        if test_parameters.packet_change != 0:
             if actual_time < (test_parameters.packet_change * (test_parameters.actual_packet_size + 1)):
                 packet_size = test_parameters.packet_size[test_parameters.actual_packet_size]
             else:

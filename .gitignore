@@ -11,3 +11,4 @@ webui_pb2.py
 .idea
 influxdb-data/*
 !influxdb-data/.gitkeep
+node_modules
