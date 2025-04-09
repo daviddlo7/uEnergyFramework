@@ -1,0 +1,1144 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_INFLUXDB",
+      "label": "InfluxDB",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "influxdb",
+      "pluginName": "InfluxDB"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "barchart",
+      "name": "Bar chart",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "11.5.0"
+    },
+    {
+      "type": "datasource",
+      "id": "influxdb",
+      "name": "InfluxDB",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "piechart",
+      "name": "Pie chart",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 24,
+      "panels": [],
+      "title": "Static Data",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "frameIndex": 1,
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "typical = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"typical-power-device\")\r\n  |> last()\r\n  |> map(fn: (r) => ({\r\n      r with\r\n      _value: string(v: r._value)\r\n  }))\r\n  |> keep(columns: [\"_time\",\"_value\",\"_measurement\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" }))\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"_measurement\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n  |> map(fn: (r) => ({\r\n      r with\r\n       \"Type\": \"Typical Consumption\"\r\n    }))\r\n\r\nmaximum_traffic = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"maximum-traffic-throughput\")\r\n  |> last()\r\n  |> map(fn: (r) => ({\r\n      r with\r\n      _value: string(v: r._value)\r\n  }))\r\n  //|> rename(columns: { \"_value\": \"MaximumTraffic\" })\r\n |> keep(columns: [\"_time\",  \"_value\",\"_measurement\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" }))\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"_measurement\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n  |> map(fn: (r) => ({\r\n      r with\r\n       \"Type\": \"Throughput\"\r\n    }))\r\n\r\n\r\nmaximum_consumption = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"max-power\")\r\n  |> last()\r\n  |> map(fn: (r) => ({\r\n      r with\r\n      _value: string(v: r._value)\r\n  }))\r\n  |> keep(columns: [\"_time\",\"_value\",\"_measurement\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" }))\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"_measurement\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n  |> map(fn: (r) => ({\r\n      r with\r\n       \"Type\": \"Maximum Consumption\"\r\n    }))\r\n\r\nefficiency = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"efficiency\")\r\n  |> last()\r\n  |> map(fn: (r) => ({\r\n      r with\r\n      _value: string(v: r._value)\r\n  }))\r\n  |> keep(columns: [\"_time\",\"_value\",\"_measurement\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" }))\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"_measurement\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n  |> map(fn: (r) => ({\r\n      r with\r\n       \"Type\": \"Efficiency\"\r\n    }))\r\n\r\nnominal = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"nominal-power\")\r\n  |> last()\r\n  |> map(fn: (r) => ({\r\n      r with\r\n      _value: string(v: r._value)\r\n  }))\r\n  |> keep(columns: [\"_time\",\"_value\",\"_measurement\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" }))\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"_measurement\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n  |> map(fn: (r) => ({\r\n      r with\r\n       \"Type\": \"Nominal Power\"\r\n    }))\r\nunion(tables:[maximum_traffic,typical,maximum_consumption,efficiency,nominal])\r\n //|> pivot(rowKey:[\"${deviceName}\"], columnKey: [\"Type\"], valueColumn: \"${deviceName}\")\r\n\r\n\r\n\r\n",
+          "refId": "A"
+        }
+      ],
+      "title": "TypicalConsumption",
+      "transformations": [
+        {
+          "id": "rowsToFields",
+          "options": {
+            "mappings": [
+              {
+                "fieldName": "HL4_5_1_Huawei",
+                "handlerKey": "field.value"
+              },
+              {
+                "fieldName": "Type",
+                "handlerKey": "field.name"
+              },
+              {
+                "fieldName": "HL5_1_2_Adva",
+                "handlerKey": "field.value"
+              },
+              {
+                "fieldName": "HL_Ufispace",
+                "handlerKey": "field.value"
+              },
+              {
+                "fieldName": "HL_Juniper",
+                "handlerKey": "field.value"
+              }
+            ]
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "frameIndex": 1,
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "import \"join\"\r\nvalores = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"power-supply\"] != \"\")\r\n  |> group(columns:[\"power-supply\",\"name\"])\r\n  //|> last()\r\n  |> keep(columns:[\"power-supply\",\"_field\",\"_value\",\"name\",\"_time\"])\r\n  |> group()\r\n\r\ntiempo = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"power-supply\"] != \"\")\r\n  |> group(columns:[\"power-supply\",\"name\"])\r\n  |> last()\r\n  |> keep(columns:[\"_time\"])\r\n\r\njoin.time(method:\"left\",left: tiempo, right: valores, as: (l, r) => ({r with timepo: l._time}))\r\n  |> filter(fn: (r) => r[\"_field\"] == \"typical-power\" or r[\"_field\"] == \"nominal-power\" or r[\"_field\"] == \"capacity\")\r\n  |> unique()\r\n  |> rename(columns:{_field:\"parameters\",\"power-supply\":\"type\"})\r\n  |> keep(columns:[\"parameters\",\"type\",\"name\",\"_value\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "PowerSupply",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "import \"join\"\r\nvalores = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"boards\"] != \"\")\r\n  |> group(columns:[\"boards\",\"name\"])\r\n  //|> last()\r\n  |> keep(columns:[\"boards\",\"_field\",\"_value\",\"name\",\"_time\"])\r\n  |> group()\r\n\r\ntiempo = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"boards\"] != \"\")\r\n  |> group(columns:[\"boards\",\"name\"])\r\n  |> last()\r\n  |> keep(columns:[\"_time\"])\r\n\r\njoin.time(method:\"left\",left: tiempo, right: valores, as: (l, r) => ({r with timepo: l._time}))\r\n  |> filter(fn: (r) => r[\"_field\"] == \"typical-power\" or r[\"_field\"] == \"nominal-power\" or r[\"_field\"] == \"capacity\")\r\n  |> unique()\r\n  |> rename(columns:{_field:\"parameters\",\"boards\":\"type\"})\r\n  |> keep(columns:[\"parameters\",\"type\",\"name\",\"_value\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Boards",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 9
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "import \"join\"\r\nvalores = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"transceivers\"] != \"\")\r\n  |> group(columns:[\"transceivers\",\"name\"])\r\n  //|> last()\r\n  |> keep(columns:[\"transceivers\",\"_field\",\"_value\",\"name\",\"_time\"])\r\n  |> group()\r\n\r\ntiempo = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"transceivers\"] != \"\")\r\n  |> group(columns:[\"transceivers\",\"name\"])\r\n  |> last()\r\n  |> keep(columns:[\"_time\"])\r\n\r\njoin.time(method:\"left\",left: tiempo, right: valores, as: (l, r) => ({r with timepo: l._time}))\r\n  |> filter(fn: (r) => r[\"_field\"] == \"typical-power\" or r[\"_field\"] == \"nominal-power\" or r[\"_field\"] == \"capacity\")\r\n  |> unique()\r\n  |> rename(columns:{_field:\"parameters\",\"transceivers\":\"type\"})\r\n  |> keep(columns:[\"parameters\",\"type\",\"name\",\"_value\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Transceivers",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 9
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "import \"join\"\r\nvalores = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"components\"] != \"\")\r\n  |> group(columns:[\"components\",\"name\"])\r\n  //|> last()\r\n  |> keep(columns:[\"components\",\"_field\",\"_value\",\"name\",\"_time\"])\r\n  |> group()\r\n\r\ntiempo = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"components\"] != \"\")\r\n  |> group(columns:[\"components\",\"name\"])\r\n  |> last()\r\n  |> keep(columns:[\"_time\"])\r\n\r\njoin.time(method:\"left\",left: tiempo, right: valores, as: (l, r) => ({r with timepo: l._time}))\r\n  |> filter(fn: (r) => r[\"_field\"] == \"typical-power\" or r[\"_field\"] == \"nominal-power\" or r[\"_field\"] == \"capacity\")\r\n  |> unique()\r\n  |> rename(columns:{_field:\"parameters\",\"components\":\"type\"})\r\n  |> keep(columns:[\"parameters\",\"type\",\"name\",\"_value\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Components",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "id": 23,
+      "panels": [],
+      "title": "Telemetry Data",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "W",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Throughput"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "Gbps"
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              },
+              {
+                "id": "custom.lineInterpolation",
+                "value": "stepBefore"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "timezone": [
+          "Europe/Berlin"
+        ],
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "startDate = from(bucket: \"time_series_db_final\")\r\n          |> range(start: 0)\r\n          |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n          |> filter(fn: (r) => r[\"_field\"] == \"StartDate\")\r\n          |> filter(fn: (r) => r[\"_value\"] == \"${StartDate}\")\r\n          |> rename(columns: { \"_value\": \"StartDate\" })\r\n\r\nstartTime = from(bucket: \"time_series_db_final\")\r\n          |> range(start: 0)\r\n          |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n          |> filter(fn: (r) => r[\"_field\"] == \"StartTime\")\r\n          |> filter(fn: (r) => r[\"_value\"] == \"${StartTime}\")\r\n          |> rename(columns: { \"_value\": \"StartTime\" })\r\n          \r\ninstantaneousPower = from(bucket: \"time_series_db_final\")\r\n          |> range(start: 0)\r\n          |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n          |> filter(fn: (r) => r[\"_field\"] == \"power_device\")\r\n          |> map(fn: (r) => ({\r\n              r with _value: int(v: r._value)\r\n          }))\r\n          |> rename(columns: { \"_value\": \"PowerConsumption\" })\r\n\r\nthroughput = from(bucket: \"time_series_db_final\")\r\n          |> range(start: 0)\r\n          |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n          |> filter(fn: (r) => r[\"_field\"] == \"traffic_throughput\")\r\n          |> rename(columns: { \"_value\": \"Throughput\" })\r\nt1 = join(tables: {start: startDate, power: startTime}, on: [\"_time\"])\r\nt2 = join(tables: {start: t1, power: instantaneousPower}, on: [\"_time\"])\r\nt3 = join(tables: {start: t2, power: throughput}, on: [\"_time\"])\r\nt3\r\n  |> keep(columns: [\"PowerConsumption\",\"_time\",\"Throughput\"])\r\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Telemetry",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Throughput"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 22
+      },
+      "id": 17,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "from(bucket: \"time_series_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"Inst Info\"] == \"perfomance-metrics\")\r\n  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))\r\n  |> last()\r\n  |> group(columns:[\"Inst Info\"])\r\n  |> keep(columns:[\"_value\",\"_field\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" })) // Agrega una clave ficticia\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Performance metrics",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Throughput"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 12,
+        "y": 22
+      },
+      "id": 22,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "from(bucket: \"time_series_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"Inst Info\"] == \"components\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"power\")\r\n  |> last()\r\n  |> group()\r\n  |> keep(columns:[\"_value\",\"component\"])\r\n  |> rename(columns: { \"_value\": \"Power\" ,\"component\":\"Components\"})",
+          "refId": "A"
+        }
+      ],
+      "title": "Components",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "decimals": 2,
+          "mappings": []
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Board"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 26
+      },
+      "id": 16,
+      "options": {
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true,
+          "values": []
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "from(bucket: \"time_series_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"Inst Info\"] == \"boards\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"power\")\r\n  |> last()\r\n  |> group()\r\n  |> keep(columns:[\"_value\",\"board\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Boards",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Board"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 26
+      },
+      "id": 21,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Value"
+          }
+        ]
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "hide": false,
+          "query": "tiempo=from(bucket: \"time_series_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"power_device\")\r\n  |> last()\r\n  |> keep(columns:[\"_time\"])\r\n\r\n\r\nout=from(bucket: \"time_series_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"Inst Info\"] == \"power-supplies\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"output_power\")\r\n  |> last()\r\n  |> group()\r\n  |> keep(columns:[\"_value\",\"power_supply\",\"_time\"])\r\noutAjustado = join(tables:{left:tiempo,right:out},on:[\"_time\"])\r\n  |>keep(columns:[\"_value\",\"power_supply\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" }))\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"power_supply\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n   |> map(fn: (r) => ({\r\n      r with\r\n       \"Type\": \"Output Power\"\r\n    }))\r\n\r\nin=from(bucket: \"time_series_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"Inst Info\"] == \"power-supplies\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"input_power\")\r\n  |> last()\r\n  |> group()\r\n  |> keep(columns:[\"_value\",\"power_supply\",\"_time\"])\r\ninAjustado = join(tables:{left:tiempo,right:in},on:[\"_time\"])\r\n  |>keep(columns:[\"_value\",\"power_supply\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" }))\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"power_supply\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n   |> map(fn: (r) => ({\r\n      r with\r\n       \"Type\": \"Input Power\"\r\n    }))\r\n    \r\nunion(tables: [inAjustado, outAjustado])\r\n\r\n\r\n\r\n\r\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Power Supply ",
+      "transformations": [
+        {
+          "id": "seriesToRows",
+          "options": {},
+          "topic": "series"
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUXDB}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMin": 600,
+            "fillOpacity": 73,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "AveragePower"
+            },
+            "properties": [
+              {
+                "id": "custom.axisLabel",
+                "value": "W"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Throughput"
+            },
+            "properties": [
+              {
+                "id": "custom.axisLabel",
+                "value": "Gbps"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TimeInterval"
+            },
+            "properties": [
+              {
+                "id": "custom.axisLabel",
+                "value": "Times(mins.)"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "id": 8,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 1,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "always",
+        "stacking": "none",
+        "text": {
+          "valueSize": 11
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "Interval",
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUXDB}"
+          },
+          "query": "tiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n  |> filter(fn: (r) => r[\"_value\"] == \"${StartTime}\")\r\n\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => r[\"_value\"] == \"${StartDate}\")\r\n\r\ntrafico = from(bucket: \"telemetry_db_pruebas\")\r\n          |> range(start: 0)\r\n          |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n          |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n          |> rename(columns: { \"_value\": \"Throughput\" })\r\n\r\nconsumptionIntervalo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Device\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename(columns: { \"_value\": \"AveragePower\" })\r\n  |> keep(columns: [\"_time\",\"AveragePower\",\"Intervals\"])\r\n\r\nt1 = join(tables: {start: fecha, power: tiempo}, on: [\"_time\"])\r\n  |> keep(columns: [\"_time\"])\r\nt2 = join(tables: {start: t1, power: trafico}, on: [\"_time\"])\r\n  |> group()\r\n  |> keep(columns: [\"_time\",\"Intervals\",\"Throughput\"])\r\njoin(tables: {start: t2, power: consumptionIntervalo}, on: [\"_time\",\"Intervals\"])\r\n|> keep(columns: [\"Intervals\",\"Throughput\",\"AveragePower\"])\r\n//|> group()\r\n//union(tables: [t2, consumptionIntervalo])\r\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Averages per period of times",
+      "type": "barchart"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 40,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "hide": 1,
+        "name": "deviceName",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "hide": 1,
+        "name": "StartTime",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "hide": 1,
+        "name": "StartDate",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "type": "textbox"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "Europe/Berlin",
+  "title": "Dashboard InfluxDB Final",
+  "uid": "dashboard-influxdb-final",
+  "version": 12,
+  "weekStart": ""
+}

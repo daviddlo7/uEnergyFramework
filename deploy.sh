@@ -6,7 +6,7 @@ echo "Applying namespace configuration..."
 kubectl apply -f namespace.yaml
 
 echo "Applying Kubernetes manifest for ingress..."
-microk8skubectl apply -f ingress.yaml
+microk8s kubectl apply -f ingress.yaml
 
 # Generate gRPC files for all modules
 echo "Generating gRPC-Web files for EnergyCollector (JavaScript)..."
@@ -87,6 +87,12 @@ microk8s kubectl apply -f ./src/webui/webui-deployment.yaml -n uenergyframework
 
 echo "Applying Kubernetes manifest for InfluxDB..."
 microk8s kubectl apply -f ./src/database/database-deployment.yaml -n uenergyframework
+
+echo "Applying Kubernetes manifest for Grafana Dashboard ConfigMap..."
+microk8s kubectl apply -f grafana-dashboard-files.yaml -n uenergyframework
+
+echo "Applying Kubernetes manifest for Grafana InfluxDB Connection ConfigMap..."
+microk8s kubectl apply -f influxdb-connection-configmap.yaml -n uenergyframework
 
 echo "Applying Kubernetes manifest for Grafana..."
 microk8s kubectl apply -f ./src/grafana/grafana-deployment.yaml -n uenergyframework

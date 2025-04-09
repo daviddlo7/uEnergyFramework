@@ -129,7 +129,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
                 }
             }
 
-            devices_list = {
+            devices_names = {
                 'HL4_5_1_Huawei': devices['HL4_5_1_Huawei'],
                 #'HL5_1_2_Adva': devices['HL5_1_2_Adva'],
                 #'HL_Ufispace': devices['HL_Ufispace'],
@@ -153,7 +153,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             influxdb_token = "INFLUXDB_MV_TOKEN_ALL_ACCESS"
 
             controller = EnergyControllerMain(
-                devices_list=devices_list,
+                devices_names=devices_names,
                 traffic_configuration=traffic_configuration,
                 escenario=escenario,
                 total_time=total_time,
@@ -177,6 +177,41 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
             return TestResponse(message="Test Completed")
             
+        except Exception as e:
+            default_logger.error(f"An error occurred while running the test: {e}")
+            return TestResponse(message="Error")
+
+    def RunTest2(self, request, context):
+        try:
+            default_logger.info(f"Received test request for device: {request.test_data}")
+
+            if not request.test_data:
+                return TestResponse(message="Error: Test_data not provided.")
+            controller = EnergyControllerMain(
+                devices_names=request.devices_names,
+                traffic_configuration=request.traffic_configuration,
+                escenario=request.escenario,
+                total_time=request.total_time,
+                traffic_change=request.traffic_change,
+                traffic=request.traffic,
+                packet_change=request.packet_change,
+                packet_size=request.packet_size,
+                db=request.db,
+                db_type=request.db_type,
+                web_interface=request.web_interface,
+                debug_mode=request.debug_mode,
+                save_csvs=request.save_csvs,
+                stop_event=threading.Event(),
+                influxdb_token=request.influxdb_token
+            )
+
+            controller.run()
+
+            logger_cli.info("Waiting for the test to complete...")
+            controller.exit_event.wait()  # Esperar hasta que cleanup active el evento
+
+            return TestResponse(message="Test Completed")
+
         except Exception as e:
             default_logger.error(f"An error occurred while running the test: {e}")
             return TestResponse(message="Error")
@@ -209,7 +244,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             stub = AnalyticsServiceStub(channel)
 
             # Map devices_list to gRPC Device messages
-            devices_list_proto = {
+            devices_names_proto = {
                 name: Device(
                     ip=device["ip"],
                     username=device["username"],
@@ -218,7 +253,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
                     vendor=device["vendor"],
                     info=device["info"]
                 )
-                for name, device in test_parameters.devices_list.items()
+                for name, device in test_parameters.devices_names.items()
             }
 
             # Map devices_telemetry to gRPC Telemetry messages
@@ -258,7 +293,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
             # Build the TestParameters gRPC message
             test_parameters_proto = TestParameters(
-                devices_list=devices_list_proto,
+                devices_names=devices_names_proto,
                 traffic_configuration=test_parameters.traffic_configuration,
                 configuration=test_parameters.configuration,
                 escenario=test_parameters.escenario,
@@ -307,11 +342,12 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             return "Error calling ProcessTestData"
 
 class EnergyControllerMain:
-    def __init__(self, devices_list, traffic_configuration, escenario, total_time, traffic_change,
+    def __init__(self, devices_names, traffic_configuration, escenario, total_time, traffic_change,
                  traffic, packet_change, packet_size, db, db_type, web_interface, debug_mode, save_csvs, influxdb_token,
                  stop_event=None, on_finished=None):
         self.reader = None
-        self.devices_list = devices_list
+        self.devices_list = {}
+        self.devices_names = devices_names
         self.traffic_configuration = traffic_configuration
         self.escenario = escenario
         self.total_time = total_time
@@ -335,6 +371,71 @@ class EnergyControllerMain:
         self.token = "my_admin_token"
         self.org = "uEnergyOrg"
         self.bucket = "time_series_db_pruebas"
+        self.all_devices = {
+                    'HL5_1_2_Adva': {
+                        'ip': "10.95.90.126",
+                        'username': "David.Osa",
+                        'password': "9cJk496uLH",
+                        'port': "830",
+                        'yyy': "adva",
+                        'node': '5.5.5.1',
+                        'vendor': 'Adva',
+                        'info': 'ADVA DRX-30',
+                        'interval': 2,
+                        'pdu': None
+                    },
+                    'HL4_5_1_Huawei': {
+                        'ip': "10.95.86.114",
+                        'username': "admintid",
+                        'password': "Huawei!2015",
+                        'port': "830",
+                        'yyy': "huaweiyang",
+                        'node': '4.4.4.2',
+                        'vendor': 'Huawei',
+                        'info': 'HUAWEI NE40E-X2-M8A - VRP (R) software, Version 8.221 (NE40E V800R022C10SPC300T)',
+                        'interval': 5,
+                        'pdu': None
+                    },
+                    'HL_Ufispace': {
+                        'ip': "10.95.90.75",
+                        'username': "dnroot",
+                        'password': "dnroot",
+                        'port': "830",
+                        'yyy': "ufispace",
+                        'node': "-",
+                        'vendor': "Ufispace",
+                        'info': "Ufispace S9700-23D Version: DNOS [18.2.1]build [6]",
+                        'interval': 10,
+                        'pdu': {'PSU_1': '6;OUTLET38'}
+                    },
+                    'HL_Juniper': {
+                        'ip': "10.95.90.84",
+                        'username': "tid",
+                        'password': "jun1per",
+                        'port': "830",
+                        'yyy': "juniper",
+                        'node': "-",
+                        'vendor': "Juniper",
+                        'info': "Juniper JNMX-304 Junos: 23.4R1.9",
+                        'interval': 1,
+                        'pdu': {'PEM_1': '6;OUTLET40'}
+                    },
+                    'HL_Cisco': {
+                        'ip': "10.95.90.150",
+                        'username': "cisco",
+                        'password': "cisco123",
+                        'port': "830",
+                        'yyy': "cisco",
+                        'node': "-",
+                        'vendor': "Cisco",
+                        'info': "Cisco NCS-57B1-6D24-SYS",
+                        'interval': 5,
+                        'pdu': {
+                            'PSU_0': '4;OUTLET24',
+                            'PSU_1': '4;OUTLET28',
+                        }
+                    }
+                }
 
     def setup(self):
         intervals = [device['interval'] for device in self.devices_list.values()]
@@ -490,6 +591,11 @@ class EnergyControllerMain:
         self.exit_event.set()
 
     def run(self):
+        for device_name in self.devices_names:
+            if device_name in self.all_devices:
+                self.devices_list[device_name] = self.all_devices[device_name]
+            else:
+                logger_cli.error(f"Device {device_name} not available")
         self.setup()
         logger_cli.info('Reading configuration data')
         self.reader.complete_devices_configuration(self.test_parameters)
