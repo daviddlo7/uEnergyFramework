@@ -1,15 +1,75 @@
 syntax = "proto3";
 
-service Analytics {
-    rpc CheckConnection (AnalyticsRequest) returns (AnalyticsResponse);
-    rpc ProcessTestData (AnalyticsRequest) returns (AnalyticsResponse);
-}
-
-message AnalyticsRequest {
-    string name = 1;
-    string data = 2;
+service AnalyticsService {
+  rpc CheckConnection(CheckConnectionRequest) returns (AnalyticsResponse);
+  rpc ProcessTestData(ProcessTestDataRequest) returns (AnalyticsResponse);
 }
 
 message AnalyticsResponse {
-    string message = 1;
+  string message = 1;
+}
+
+message CheckConnectionRequest {
+  string id = 1;
+}
+
+message ProcessTestDataRequest {
+    string device_name = 1;
+    TestParameters test_parameters = 2;
+}
+
+message TestParameters {
+    map<string, Device> devices_list = 1;
+    string traffic_configuration = 2;
+    map<string, string> configuration = 3;
+    string escenario = 4;
+    int32 interval = 5;
+    int32 max_interval = 6;
+    double traffic_change = 7;
+    double traffic = 8;
+    double actual_traffic = 9;
+    double packet_change = 10;
+    int32 packet_size = 11;
+    int32 actual_packet_size = 12;
+    double initial_time = 13;
+    string initial_datetime = 14;
+    string start_date = 15;
+    string start_time = 16;
+    map<string, Telemetry> devices_telemetry = 17;
+    map<string, PowerData> power_data_devices = 18;
+    bool web_interface = 19;
+    map<string, ConfigDataDevice> config_data_devices = 20;
+    map<string, StaticPowerDevice> devices_static_power_dicc = 21;
+    bool debug_mode = 22;
+    string influxdb_token = 23;
+}
+
+message Device {
+    string ip = 1;
+    string username = 2;
+    string password = 3;
+    string port = 4;
+    string vendor = 5;
+    string info = 6;
+}
+
+message Telemetry {
+    repeated double times_s = 1;
+}
+
+message PowerData {
+    map<string, double> components_power = 1;
+}
+
+message ConfigDataDevice {
+   map<string, string> config_details = 1;
+}
+
+message StaticPowerDevice {
+   map<string, StaticPowerComponent> components_power_data = 1;
+}
+
+message StaticPowerComponent {
+   double nominal_power_device = 1;
+   double typical_power_device = 2;
 }

@@ -1,0 +1,1511 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_INFLUXDB",
+      "label": "InfluxDB",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "influxdb",
+      "pluginName": "InfluxDB"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "barchart",
+      "name": "Bar chart",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "11.5.0"
+    },
+    {
+      "type": "datasource",
+      "id": "influxdb",
+      "name": "InfluxDB",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 12,
+      "panels": [],
+      "title": "Statistical Information",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "DS_INFLUXDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "DS_INFLUXDB"
+          },
+          "query": "trafico = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${Traffic:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Throughput\"})\r\n  |> keep(columns:[\"_measurement\",\"Throughput\",\"_time\",\"Intervals\"])\r\n\r\npacketsize = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"PacketSize\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${PacketSize:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Packet Size\"})\r\n  |> keep(columns:[\"_measurement\",\"Packet Size\",\"Intervals\",\"_time\"])\r\n\r\ndescripcion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic Test\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Description:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Description\"})\r\n  |> keep(columns: [\"_time\",\"Description\"])\r\n\r\nconfiguracion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Configuration\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Configuration:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Configuration\"})\r\n  |> keep(columns: [\"_time\",\"Configuration\"])\r\n\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Date:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartDate\"})\r\n  |> keep(columns: [\"_time\",\"StartDate\"])\r\n\r\ntiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Time:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartTime\"})\r\n  |> keep(columns: [\"_time\",\"StartTime\"])\r\nconsumo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Device\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Average Power\"})\r\n  |> keep(columns: [\"_time\",\"Average Power\",\"Intervals\"])\r\n\r\nconfidence = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Device\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Confidence Interval (95%)\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Confidence Interval\"})\r\n  |> keep(columns: [\"_time\",\"Confidence Interval\",\"Intervals\"])\r\n\r\nmargen = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Device\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Margin of Error (95% CI)\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Margin of Error\"})\r\n  |> keep(columns: [\"_time\",\"Margin of Error\",\"Intervals\"])\r\n\r\ndesviacion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Device\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Standard Deviation\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Standard Deviation\"})\r\n  |> keep(columns: [\"_time\",\"Standard Deviation\",\"Intervals\"])\r\n\r\nsample = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Device\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Sample Size\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Sample Size\"})\r\n  |> keep(columns: [\"_time\",\"Sample Size\",\"Intervals\"])\r\n\r\nt1 = join(tables: {left: descripcion, right: configuracion}, on: [\"_time\"])\r\nt2 = join(tables: {left: t1, right: fecha}, on: [\"_time\"])\r\nt3 = join(tables: {left: t2, right: tiempo}, on: [\"_time\"])\r\nt4 = join(tables: {left: t3, right: trafico}, on: [\"_time\"])\r\nt5 = join(tables: {left: t4, right: packetsize}, on: [\"_time\",\"Intervals\"])\r\nt6 = join(tables: {left: t5, right: consumo}, on: [\"_time\",\"Intervals\"])\r\nt7 = join(tables: {left: t6, right: confidence}, on: [\"_time\",\"Intervals\"])\r\nt8 = join(tables: {left: t7, right: margen}, on: [\"_time\",\"Intervals\"])\r\nt9 = join(tables: {left: t8, right: desviacion}, on: [\"_time\",\"Intervals\"])\r\nt10 = join(tables: {left: t9, right: sample}, on: [\"_time\",\"Intervals\"])\r\nt10\r\n|> keep(columns:[\"Description\",\"Configuration\",\"StartDate\",\"StartTime\",\"Throughput\",\"Packet Size\",\"Intervals\",\"Average Power\",\"Confidence Interval\",\"Margin of Error\",\"Standard Deviation\",\"Sample Size\"])\r\n\r\n\r\n  ",
+          "refId": "A"
+        }
+      ],
+      "title": "Statistical Data (Device)",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Average": false
+            },
+            "includeByName": {},
+            "indexByName": {
+              "Average Power": 2,
+              "Confidence Interval": 5,
+              "Configuration": 8,
+              "Description": 0,
+              "Intervals": 1,
+              "Margin of Error": 7,
+              "Packet Size": 4,
+              "Sample Size": 9,
+              "Standard Deviation": 6,
+              "StartDate": 10,
+              "StartTime": 11,
+              "Throughput": 3
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "DS_INFLUXDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "id": 13,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "DS_INFLUXDB"
+          },
+          "query": "trafico = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${Traffic:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Traffic\"})\r\n  |> keep(columns:[\"_measurement\",\"Traffic\",\"_time\",\"Intervals\"])\r\n\r\npacketsize = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"PacketSize\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${PacketSize:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Packet Size\"})\r\n  |> keep(columns:[\"_measurement\",\"Packet Size\",\"Intervals\",\"_time\"])\r\n\r\ndescripcion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic Test\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Description:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Description\"})\r\n  |> keep(columns: [\"_time\",\"Description\"])\r\n\r\nconfiguracion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Configuration\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Configuration:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Configuration\"})\r\n  |> keep(columns: [\"_time\",\"Configuration\"])\r\n\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Date:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartDate\"})\r\n  |> keep(columns: [\"_time\",\"StartDate\"])\r\n\r\ntiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Time:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartTime\"})\r\n  |> keep(columns: [\"_time\",\"StartTime\"])\r\nconsumo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Boards\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Average\"})\r\n  |> keep(columns: [\"_time\",\"Average\",\"Intervals\",\"Board\"])\r\n\r\nconfidence = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Boards\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Confidence Interval (95%)\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Confidence Interval\"})\r\n  |> keep(columns: [\"_time\",\"Confidence Interval\",\"Intervals\",\"Board\"])\r\n\r\nmargen = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Boards\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Margin of Error (95% CI)\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Margin of Error\"})\r\n  |> keep(columns: [\"_time\",\"Margin of Error\",\"Intervals\",\"Board\"])\r\n\r\ndesviacion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Boards\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Standard Deviation\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Standard Deviation\"})\r\n  |> keep(columns: [\"_time\",\"Standard Deviation\",\"Intervals\",\"Board\"])\r\n\r\nsample = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Boards\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Sample Size\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Sample Size\"})\r\n  |> keep(columns: [\"_time\",\"Sample Size\",\"Intervals\",\"Board\"])\r\n\r\nt1 = join(tables: {left: descripcion, right: configuracion}, on: [\"_time\"])\r\nt2 = join(tables: {left: t1, right: fecha}, on: [\"_time\"])\r\nt3 = join(tables: {left: t2, right: tiempo}, on: [\"_time\"])\r\nt4 = join(tables: {left: t3, right: trafico}, on: [\"_time\"])\r\nt5 = join(tables: {left: t4, right: packetsize}, on: [\"_time\",\"Intervals\"])\r\nt6 = join(tables: {left: t5, right: consumo}, on: [\"_time\",\"Intervals\"])\r\nt7 = join(tables: {left: t6, right: confidence}, on: [\"_time\",\"Intervals\",\"Board\"])\r\nt8 = join(tables: {left: t7, right: margen}, on: [\"_time\",\"Intervals\",\"Board\"])\r\nt9 = join(tables: {left: t8, right: desviacion}, on: [\"_time\",\"Intervals\",\"Board\"])\r\nt10 = join(tables: {left: t9, right: sample}, on: [\"_time\",\"Intervals\",\"Board\"])\r\nt10\r\n|> keep(columns:[\"Description\",\"Configuration\",\"StartDate\",\"StartTime\",\"Traffic\",\"Packet Size\",\"Intervals\",\"Average\",\"Confidence Interval\",\"Margin of Error\",\"Standard Deviation\",\"Board\",\"Sample Size\"])\r\n\r\n\r\n  ",
+          "refId": "A"
+        }
+      ],
+      "title": "Statistical Data (Boards)",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "Average": 3,
+              "Board": 1,
+              "Confidence Interval": 6,
+              "Configuration": 9,
+              "Description": 0,
+              "Intervals": 2,
+              "Margin of Error": 8,
+              "Packet Size": 5,
+              "Sample Size": 10,
+              "Standard Deviation": 7,
+              "StartDate": 11,
+              "StartTime": 12,
+              "Traffic": 4
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "DS_INFLUXDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 14,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "DS_INFLUXDB"
+          },
+          "query": "trafico = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${Traffic:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Traffic\"})\r\n  |> keep(columns:[\"_measurement\",\"Traffic\",\"_time\",\"Intervals\"])\r\n\r\npacketsize = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"PacketSize\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${PacketSize:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Packet Size\"})\r\n  |> keep(columns:[\"_measurement\",\"Packet Size\",\"Intervals\",\"_time\"])\r\n\r\ndescripcion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic Test\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Description:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Description\"})\r\n  |> keep(columns: [\"_time\",\"Description\"])\r\n\r\nconfiguracion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Configuration\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Configuration:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Configuration\"})\r\n  |> keep(columns: [\"_time\",\"Configuration\"])\r\n\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Date:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartDate\"})\r\n  |> keep(columns: [\"_time\",\"StartDate\"])\r\n\r\ntiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Time:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartTime\"})\r\n  |> keep(columns: [\"_time\",\"StartTime\"])\r\n\r\nconfidence_Component = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Components\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Confidence Interval (95%)\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Confidence Interval\"})\r\n  |> keep(columns: [\"_time\",\"Confidence Interval\",\"Intervals\",\"Component\"])\r\n\r\nmargen_Component = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Components\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Margin of Error (95% CI)\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Margin of Error\"})\r\n  |> keep(columns: [\"_time\",\"Margin of Error\",\"Intervals\",\"Component\"])\r\n\r\ndesviacion_Component = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Components\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Standard Deviation\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Standard Deviation\"})\r\n  |> keep(columns: [\"_time\",\"Standard Deviation\",\"Intervals\",\"Component\"])\r\n\r\nsample_Component = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Components\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Sample Size\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Sample Size\"})\r\n  |> keep(columns: [\"_time\",\"Sample Size\",\"Intervals\",\"Component\"])\r\n\r\n\r\nconsumo_component = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Components\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Average\"})\r\n  |> keep(columns: [\"_time\",\"Average\",\"Intervals\",\"Component\"])\r\n\r\nconsumo_psu = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"PowerSupplies\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Average\"})\r\n  |> keep(columns: [\"_time\",\"Average\",\"Intervals\",\"PowerSupply\"])\r\n\r\nconfidence_PSU = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"PowerSupplies\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Confidence Interval (95%)\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Confidence Interval\"})\r\n  |> keep(columns: [\"_time\",\"Confidence Interval\",\"Intervals\",\"PowerSupply\"])\r\n\r\nmargen_PSU = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"PowerSupplies\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Margin of Error (95% CI)\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Margin of Error\"})\r\n  |> keep(columns: [\"_time\",\"Margin of Error\",\"Intervals\",\"PowerSupply\"])\r\n\r\ndesviacion_PSU = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"PowerSupplies\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Standard Deviation\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Standard Deviation\"})\r\n  |> keep(columns: [\"_time\",\"Standard Deviation\",\"Intervals\",\"PowerSupply\"])\r\n\r\nsample_PSU = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"PowerSupplies\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Sample Size\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Sample Size\"})\r\n  |> keep(columns: [\"_time\",\"Sample Size\",\"Intervals\",\"PowerSupply\"])\r\n\r\nt1 = join(tables: {left: descripcion, right: configuracion}, on: [\"_time\"])\r\nt2 = join(tables: {left: t1, right: fecha}, on: [\"_time\"])\r\nt3 = join(tables: {left: t2, right: tiempo}, on: [\"_time\"])\r\nt4 = join(tables: {left: t3, right: trafico}, on: [\"_time\"])\r\nt5 = join(tables: {left: t4, right: packetsize}, on: [\"_time\",\"Intervals\"])\r\n\r\ncomponentes = join(tables: {left: t5, right: consumo_component}, on: [\"_time\",\"Intervals\"])\r\ncomponentes2 = join(tables: {left: componentes, right:confidence_Component }, on: [\"_time\",\"Intervals\",\"Component\"])\r\ncomponentes3 = join(tables: {left: componentes2, right:margen_Component }, on: [\"_time\",\"Intervals\",\"Component\"])\r\ncomponentes4 = join(tables: {left: componentes3, right:desviacion_Component }, on: [\"_time\",\"Intervals\",\"Component\"])\r\ncomponentesFinal = join(tables: {left: componentes4, right:sample_Component }, on: [\"_time\",\"Intervals\",\"Component\"])\r\n|> rename (columns:{Component:\"Element\"})\r\n\r\n\r\npsus = join(tables: {left: t5, right: consumo_psu}, on: [\"_time\",\"Intervals\"])\r\npsus2 = join(tables: {left: psus, right:confidence_PSU }, on: [\"_time\",\"Intervals\",\"PowerSupply\"])\r\npsus3 = join(tables: {left: psus2, right:margen_PSU }, on: [\"_time\",\"Intervals\",\"PowerSupply\"])\r\npsus4 = join(tables: {left: psus3, right:desviacion_PSU}, on: [\"_time\",\"Intervals\",\"PowerSupply\"])\r\npsusFinal = join(tables: {left: psus4, right:sample_PSU}, on: [\"_time\",\"Intervals\",\"PowerSupply\"])\r\n  |> rename (columns:{PowerSupply:\"Element\"})\r\n\r\nunion(tables: [componentesFinal, psusFinal])\r\n  |> keep(columns:[\"Description\",\"Configuration\",\"StartDate\",\"StartTime\",\"Traffic\",\"Packet Size\",\"Intervals\",\"Average\",\"Confidence Interval\",\"Margin of Error\",\"Standard Deviation\",\"Element\",\"Sample Size\"])\r\n  ",
+          "refId": "A"
+        }
+      ],
+      "title": "Statistical Data (Components+PS)",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "Average": 3,
+              "Confidence Interval": 6,
+              "Configuration": 9,
+              "Description": 0,
+              "Element": 1,
+              "Intervals": 2,
+              "Margin of Error": 8,
+              "Packet Size": 5,
+              "Sample Size": 10,
+              "Standard Deviation": 7,
+              "StartDate": 11,
+              "StartTime": 12,
+              "Traffic": 4
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "id": 6,
+      "panels": [],
+      "title": "Telemetry",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "DS_INFLUXDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Date"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 114
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 91
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Traffic"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 68
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PacketSize"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 108
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "StartInterval"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 106
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TimeInterval"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 114
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Power"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 72
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PowerMin"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 87
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PowerMax"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 95
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Desviation"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 95
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Description"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "PowerMax"
+          }
+        ]
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "DS_INFLUXDB"
+          },
+          "query": "trafico = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${Traffic:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Traffic\"})\r\n  |> keep(columns:[\"_measurement\",\"Traffic\",\"_time\",\"Intervals\"])\r\n\r\npacketsize = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"PacketSize\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${PacketSize:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Packet Size\"})\r\n  |> keep(columns:[\"_measurement\",\"Packet Size\",\"Intervals\",\"_time\"])\r\n\r\ndescripcion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic Test\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Description:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Description\"})\r\n  |> keep(columns: [\"_time\",\"Description\"])\r\n\r\nconfiguracion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Configuration\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Configuration:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Configuration\"})\r\n  |> keep(columns: [\"_time\",\"Configuration\"])\r\n\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Date:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartDate\"})\r\n  |> keep(columns: [\"_time\",\"StartDate\"])\r\n\r\ntiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Time:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartTime\"})\r\n  |> keep(columns: [\"_time\",\"StartTime\"])\r\nconsumo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Device\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Consumption\"})\r\n  |> keep(columns: [\"_time\",\"Consumption\",\"Intervals\"])\r\n\r\n\r\nt1 = join(tables: {left: descripcion, right: configuracion}, on: [\"_time\"])\r\nt2 = join(tables: {left: t1, right: fecha}, on: [\"_time\"])\r\nt3 = join(tables: {left: t2, right: tiempo}, on: [\"_time\"])\r\nt4 = join(tables: {left: t3, right: trafico}, on: [\"_time\"])\r\nt5 = join(tables: {left: t4, right: packetsize}, on: [\"_time\",\"Intervals\"])\r\nt6 = join(tables: {left: t5, right: consumo}, on: [\"_time\",\"Intervals\"])\r\nt6\r\n|> keep(columns:[\"Description\",\"Configuration\",\"StartDate\",\"StartTime\",\"Traffic\",\"Packet Size\",\"Intervals\",\"Consumption\"])\r\n\r\n\r\n  \r\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Device Consumption",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "Configuration": 5,
+              "Consumption": 2,
+              "Description": 0,
+              "Intervals": 1,
+              "Packet Size": 4,
+              "StartDate": 6,
+              "StartTime": 7,
+              "Traffic": 3
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "DS_INFLUXDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": false,
+            "inspect": false
+          },
+          "decimals": 2,
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 36
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "enablePagination": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "DS_INFLUXDB"
+          },
+          "query": "trafico = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${Traffic:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Traffic\"})\r\n  |> keep(columns:[\"_measurement\",\"Traffic\",\"_time\",\"Intervals\"])\r\n\r\npacketsize = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"PacketSize\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${PacketSize:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Packet Size\"})\r\n  |> keep(columns:[\"_measurement\",\"Packet Size\",\"Intervals\",\"_time\"])\r\n\r\ndescripcion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic Test\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Description:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Description\"})\r\n  |> keep(columns: [\"_time\",\"Description\"])\r\n\r\nconfiguracion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Configuration\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Configuration:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Configuration\"})\r\n  |> keep(columns: [\"_time\",\"Configuration\"])\r\n\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Date:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartDate\"})\r\n  |> keep(columns: [\"_time\",\"StartDate\"])\r\n\r\ntiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Time:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartTime\"})\r\n  |> keep(columns: [\"_time\",\"StartTime\"])\r\n\r\n\r\n\r\nconsumo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Boards\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Consumption\"})\r\n  |> keep(columns: [\"_time\",\"Consumption\",\"Intervals\",\"Board\"])\r\n\r\nt1 = join(tables: {left: descripcion, right: configuracion}, on: [\"_time\"])\r\nt2 = join(tables: {left: t1, right: fecha}, on: [\"_time\"])\r\nt3 = join(tables: {left: t2, right: tiempo}, on: [\"_time\"])\r\nt4 = join(tables: {left: t3, right: trafico}, on: [\"_time\"])\r\nt5 = join(tables: {left: t4, right: packetsize}, on: [\"_time\",\"Intervals\"])\r\n\r\n\r\nt6 = join(tables: {left: t5, right: consumo}, on: [\"_time\",\"Intervals\"])\r\nt6\r\n|> keep(columns:[\"Board\",\"Intervals\",\"Consumption\"])\r\n\r\n\r\n  \r\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Boards",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "Board": 0,
+              "Consumption": 2,
+              "Intervals": 1
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "DS_INFLUXDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 36
+      },
+      "id": 15,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "DS_INFLUXDB"
+          },
+          "query": "trafico = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${Traffic:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Traffic\"})\r\n  |> keep(columns:[\"_measurement\",\"Traffic\",\"_time\",\"Intervals\"])\r\n\r\npacketsize = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"PacketSize\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${PacketSize:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Packet Size\"})\r\n  |> keep(columns:[\"_measurement\",\"Packet Size\",\"Intervals\",\"_time\"])\r\n\r\ndescripcion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic Test\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Description:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Description\"})\r\n  |> keep(columns: [\"_time\",\"Description\"])\r\n\r\nconfiguracion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Configuration\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Configuration:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Configuration\"})\r\n  |> keep(columns: [\"_time\",\"Configuration\"])\r\n\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Date:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartDate\"})\r\n  |> keep(columns: [\"_time\",\"StartDate\"])\r\n\r\ntiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Time:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartTime\"})\r\n  |> keep(columns: [\"_time\",\"StartTime\"])\r\n\r\n\r\n\r\nconsumo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Components\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Component_power\"})\r\n  |> keep(columns: [\"_time\",\"Component_power\",\"Intervals\",\"Component\"])\r\n\r\nconsumo_PSU = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"PowerSupplies\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"power\"})\r\n  |> keep(columns: [\"_time\",\"power\",\"Intervals\",\"PowerSupply\"])\r\n\r\nt1 = join(tables: {left: descripcion, right: configuracion}, on: [\"_time\"])\r\nt2 = join(tables: {left: t1, right: fecha}, on: [\"_time\"])\r\nt3 = join(tables: {left: t2, right: tiempo}, on: [\"_time\"])\r\nt4 = join(tables: {left: t3, right: trafico}, on: [\"_time\"])\r\nt5 = join(tables: {left: t4, right: packetsize}, on: [\"_time\",\"Intervals\"])\r\n\r\n\r\nt6 = join(tables: {left: t5, right: consumo_PSU}, on: [\"_time\",\"Intervals\"])\r\nt6\r\n|> keep(columns:[\"PowerSupply\",\"Intervals\",\"power\"])\r\n\r\n\r\n  \r\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Power Supply",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "Intervals": 1,
+              "PowerSupply": 0,
+              "power": 2
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "DS_INFLUXDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 36
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "DS_INFLUXDB"
+          },
+          "query": "trafico = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${Traffic:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Traffic\"})\r\n  |> keep(columns:[\"_measurement\",\"Traffic\",\"_time\",\"Intervals\"])\r\n\r\npacketsize = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"PacketSize\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${PacketSize:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Packet Size\"})\r\n  |> keep(columns:[\"_measurement\",\"Packet Size\",\"Intervals\",\"_time\"])\r\n\r\ndescripcion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic Test\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Description:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Description\"})\r\n  |> keep(columns: [\"_time\",\"Description\"])\r\n\r\nconfiguracion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Configuration\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Configuration:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Configuration\"})\r\n  |> keep(columns: [\"_time\",\"Configuration\"])\r\n\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Date:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartDate\"})\r\n  |> keep(columns: [\"_time\",\"StartDate\"])\r\n\r\ntiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Time:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartTime\"})\r\n  |> keep(columns: [\"_time\",\"StartTime\"])\r\n\r\n\r\n\r\nconsumo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Components\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"power\"})\r\n  |> keep(columns: [\"_time\",\"power\",\"Intervals\",\"Component\"])\r\n\r\nconsumo_PSU = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"PowerSupplies\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"PowerSupply_power\"})\r\n  |> keep(columns: [\"_time\",\"PowerSupply_power\",\"Intervals\",\"PowerSupply\"])\r\n\r\nt1 = join(tables: {left: descripcion, right: configuracion}, on: [\"_time\"])\r\nt2 = join(tables: {left: t1, right: fecha}, on: [\"_time\"])\r\nt3 = join(tables: {left: t2, right: tiempo}, on: [\"_time\"])\r\nt4 = join(tables: {left: t3, right: trafico}, on: [\"_time\"])\r\nt5 = join(tables: {left: t4, right: packetsize}, on: [\"_time\",\"Intervals\"])\r\n\r\n\r\nt6 = join(tables: {left: t5, right: consumo}, on: [\"_time\",\"Intervals\"])\r\nt6\r\n|> keep(columns:[\"Component\",\"Intervals\",\"power\"])\r\n\r\n\r\n  \r\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Components ",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {}
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 44
+      },
+      "id": 5,
+      "panels": [],
+      "title": "Graphics",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "DS_INFLUXDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 45
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "DS_INFLUXDB"
+          },
+          "query": "startDate = from(bucket: \"time_series_db_pruebas\")\r\n          |> range(start: 0)\r\n          |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n          |> filter(fn: (r) => r[\"_field\"] == \"StartDate\")\r\n          |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Date:json}))\r\n          |> group()\r\n          |> rename(columns: { \"_value\": \"StartDate\" })\r\n          |> keep(columns:[\"_time\",\"StartDate\"])\r\n\r\nstartTime = from(bucket: \"time_series_db_pruebas\")\r\n          |> range(start: 0)\r\n          |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n          |> filter(fn: (r) => r[\"_field\"] == \"StartTime\")\r\n          |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Time:json}))\r\n          |> group()\r\n          |> rename(columns: { \"_value\": \"StartTime\" })\r\n          |> keep(columns:[\"_time\",\"StartTime\"])\r\n\r\ninstantaneousPower = from(bucket: \"time_series_db_pruebas\")\r\n          |> range(start: 0)\r\n          |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n          |> filter(fn: (r) => r[\"_field\"] == \"power_device\")\r\n          |> map(fn: (r) => ({\r\n              r with _value: int(v: r._value)\r\n          }))\r\n          |> rename(columns: { \"_value\": \"PowerConsumption\" })\r\n          |> keep(columns:[\"_time\",\"PowerConsumption\"])\r\n\r\ntrafico = from(bucket: \"time_series_db_pruebas\")\r\n          |> range(start: 0)\r\n          |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n          |> filter(fn: (r) => r[\"_field\"] == \"traffic_throughput\")\r\n          |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${Traffic:json}))\r\n          |> group()\r\n          |> rename(columns: { \"_value\": \"Throughput\" })\r\n          |>keep(columns:[\"_time\",\"Throughput\"])\r\n\r\npacketsize = from(bucket: \"time_series_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"traffic_packet_size\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${PacketSize:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Packet Size\"})\r\n  |> keep(columns:[\"Packet Size\",\"_time\"])\r\n\r\ndescripcion = from(bucket: \"time_series_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"TestConfiguration\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Description:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Description\"})\r\n  |> keep(columns: [\"_time\",\"Description\"])\r\n\r\n\r\nconfiguracion = from(bucket: \"time_series_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"DeviceConfiguration\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Configuration:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Configuration\"})\r\n  |> keep(columns: [\"_time\",\"Configuration\"])\r\n \r\n\r\n\r\nt1 = join(tables: {left: descripcion, right: configuracion}, on: [\"_time\"])\r\nt2 = join(tables: {left: t1, right: startDate}, on: [\"_time\"])\r\nt3 = join(tables: {left: t2, right: startTime}, on: [\"_time\"])\r\nt4 = join(tables: {left: t3, right: trafico}, on: [\"_time\"])\r\nt5 = join(tables: {left: t4, right: packetsize}, on: [\"_time\"])\r\nt6 = join(tables: {left: t5, right: instantaneousPower}, on: [\"_time\"])\r\n\r\nt6\r\n|> keep(columns:[\"_time\",\"PowerConsumption\",\"StartTime\"])\r\n|>group (columns:[\"StartTime\"])\r\n\r\n\r\n  ",
+          "refId": "A"
+        }
+      ],
+      "title": "Instantaneous Data",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "DS_INFLUXDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "W",
+            "axisPlacement": "auto",
+            "axisSoftMin": 500,
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 2,
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Intervals"
+            },
+            "properties": [
+              {
+                "id": "custom.axisLabel",
+                "value": "Period of time (mins.)"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 45
+      },
+      "id": 2,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "Intervals",
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "DS_INFLUXDB"
+          },
+          "query": "trafico = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${Traffic:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Traffic\"})\r\n  |> keep(columns:[\"_measurement\",\"Traffic\",\"_time\",\"Intervals\"])\r\n\r\npacketsize = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"PacketSize\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${PacketSize:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Packet Size\"})\r\n  |> keep(columns:[\"_measurement\",\"Packet Size\",\"Intervals\",\"_time\"])\r\n\r\ndescripcion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic Test\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Description:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Description\"})\r\n  |> keep(columns: [\"_time\",\"Description\"])\r\n\r\nconfiguracion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Configuration\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Configuration:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Configuration\"})\r\n  |> keep(columns: [\"_time\",\"Configuration\"])\r\n\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Date:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartDate\"})\r\n  |> keep(columns: [\"_time\",\"StartDate\"])\r\n\r\ntiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Time:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartTime\"})\r\n  |> keep(columns: [\"_time\",\"StartTime\"])\r\n\r\nconsumo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Device\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Consumption\"})\r\n  |> keep(columns: [\"_time\",\"Consumption\",\"Intervals\"])\r\n\r\nt1 = join(tables: {left: descripcion, right: configuracion}, on: [\"_time\"])\r\nt2 = join(tables: {left: t1, right: fecha}, on: [\"_time\"])\r\nt3 = join(tables: {left: t2, right: tiempo}, on: [\"_time\"])\r\nt4 = join(tables: {left: t3, right: trafico}, on: [\"_time\"])\r\nt5 = join(tables: {left: t4, right: packetsize}, on: [\"_time\",\"Intervals\"])\r\nt6 = join(tables: {left: t5, right: consumo}, on: [\"_time\",\"Intervals\"])\r\nt6\r\n|> keep(columns: [\"Consumption\",\"Intervals\",\"Traffic\",\"Packet Size\"])\r\n\r\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Averages per period of time (Device)",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "DS_INFLUXDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "W",
+            "axisPlacement": "auto",
+            "axisSoftMin": 500,
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 2,
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Intervals"
+            },
+            "properties": [
+              {
+                "id": "custom.axisLabel",
+                "value": "Period of time (mins.)"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 7,
+        "x": 0,
+        "y": 53
+      },
+      "id": 9,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.1.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "DS_INFLUXDB"
+          },
+          "query": "trafico = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${Traffic:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Traffic\"})\r\n  |> keep(columns:[\"_measurement\",\"Traffic\",\"_time\",\"Intervals\"])\r\n\r\npacketsize = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"PacketSize\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${PacketSize:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Packet Size\"})\r\n  |> keep(columns:[\"_measurement\",\"Packet Size\",\"Intervals\",\"_time\"])\r\n\r\ndescripcion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic Test\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Description:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Description\"})\r\n  |> keep(columns: [\"_time\",\"Description\"])\r\n\r\nconfiguracion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Configuration\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Configuration:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Configuration\"})\r\n  |> keep(columns: [\"_time\",\"Configuration\"])\r\n\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Date:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartDate\"})\r\n  |> keep(columns: [\"_time\",\"StartDate\"])\r\n\r\ntiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Time:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartTime\"})\r\n  |> keep(columns: [\"_time\",\"StartTime\"])\r\n\r\n\r\n\r\nconsumo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Boards\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Consumption\"})\r\n  |> keep(columns: [\"_time\",\"Consumption\",\"Intervals\",\"Board\"])\r\n\r\nt1 = join(tables: {left: descripcion, right: configuracion}, on: [\"_time\"])\r\nt2 = join(tables: {left: t1, right: fecha}, on: [\"_time\"])\r\nt3 = join(tables: {left: t2, right: tiempo}, on: [\"_time\"])\r\nt4 = join(tables: {left: t3, right: trafico}, on: [\"_time\"])\r\nt5 = join(tables: {left: t4, right: packetsize}, on: [\"_time\",\"Intervals\"])\r\n\r\n\r\nt6 = join(tables: {left: t5, right: consumo}, on: [\"_time\",\"Intervals\"])\r\nt6\r\n|> group(columns:[\"StartTime\"])\r\n|> keep(columns:[\"Board\",\"Intervals\",\"Consumption\",\"StartTime\"])\r\n|> pivot(rowKey: [\"Intervals\"], columnKey: [\"Board\"], valueColumn: \"Consumption\")\r\n|> group()\r\n\r\n\r\n  \r\n\r\n\r\n  \r\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Averages per period of time (Boards)",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "DS_INFLUXDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "W",
+            "axisPlacement": "auto",
+            "axisSoftMin": 500,
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 2,
+          "mappings": [],
+          "min": 700,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Intervals"
+            },
+            "properties": [
+              {
+                "id": "custom.axisLabel",
+                "value": "Period of time (mins.)"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 7,
+        "y": 53
+      },
+      "id": 10,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "TimeInterval",
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.1.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "DS_INFLUXDB"
+          },
+          "query": "trafico = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${Traffic:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Traffic\"})\r\n  |> keep(columns:[\"_measurement\",\"Traffic\",\"_time\",\"Intervals\"])\r\n\r\npacketsize = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"PacketSize\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${PacketSize:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Packet Size\"})\r\n  |> keep(columns:[\"_measurement\",\"Packet Size\",\"Intervals\",\"_time\"])\r\n\r\ndescripcion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic Test\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Description:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Description\"})\r\n  |> keep(columns: [\"_time\",\"Description\"])\r\n\r\nconfiguracion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Configuration\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Configuration:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Configuration\"})\r\n  |> keep(columns: [\"_time\",\"Configuration\"])\r\n\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Date:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartDate\"})\r\n  |> keep(columns: [\"_time\",\"StartDate\"])\r\n\r\ntiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Time:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartTime\"})\r\n  |> keep(columns: [\"_time\",\"StartTime\"])\r\n\r\n\r\n\r\nconsumo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Components\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Consumption\"})\r\n  |> keep(columns: [\"_time\",\"Consumption\",\"Intervals\",\"Component\"])\r\n\r\nt1 = join(tables: {left: descripcion, right: configuracion}, on: [\"_time\"])\r\nt2 = join(tables: {left: t1, right: fecha}, on: [\"_time\"])\r\nt3 = join(tables: {left: t2, right: tiempo}, on: [\"_time\"])\r\nt4 = join(tables: {left: t3, right: trafico}, on: [\"_time\"])\r\nt5 = join(tables: {left: t4, right: packetsize}, on: [\"_time\",\"Intervals\"])\r\n\r\n\r\nt6 = join(tables: {left: t5, right: consumo}, on: [\"_time\",\"Intervals\"])\r\nt6\r\n|> keep(columns:[\"Component\",\"Intervals\",\"Consumption\"])\r\n|> group(columns:[\"Component\"])\r\n|> pivot(rowKey: [\"Intervals\"], columnKey: [\"Component\"], valueColumn: \"Consumption\")\r\n|> group()\r\n\r\n  \r\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Averages per period of time (Components)",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "DS_INFLUXDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "W",
+            "axisPlacement": "auto",
+            "axisSoftMin": 500,
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 2,
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Intervals"
+            },
+            "properties": [
+              {
+                "id": "custom.axisLabel",
+                "value": "Period of time (mins.)"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 9,
+        "x": 15,
+        "y": 53
+      },
+      "id": 11,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "Intervals",
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.1.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "DS_INFLUXDB"
+          },
+          "query": "trafico = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${Traffic:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Traffic\"})\r\n  |> keep(columns:[\"_measurement\",\"Traffic\",\"_time\",\"Intervals\"])\r\n\r\npacketsize = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"PacketSize\")\r\n  |> filter(fn: (r) => contains(value: string(v: r[\"_value\"]), set: ${PacketSize:json}))\r\n  |> group()\r\n  |> rename(columns: {_value: \"Packet Size\"})\r\n  |> keep(columns:[\"_measurement\",\"Packet Size\",\"Intervals\",\"_time\"])\r\n\r\ndescripcion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic Test\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Description:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Description\"})\r\n  |> keep(columns: [\"_time\",\"Description\"])\r\n\r\nconfiguracion = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Configuration\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Configuration:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"Configuration\"})\r\n  |> keep(columns: [\"_time\",\"Configuration\"])\r\n\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Date:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartDate\"})\r\n  |> keep(columns: [\"_time\",\"StartDate\"])\r\n\r\ntiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Time:json}))\r\n  |> group()\r\n  |> rename (columns:{_value:\"StartTime\"})\r\n  |> keep(columns: [\"_time\",\"StartTime\"])\r\n\r\n\r\n\r\nconsumo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"PowerSupplies\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename (columns:{_value:\"Consumption\"})\r\n  |> keep(columns: [\"_time\",\"Consumption\",\"Intervals\",\"PowerSupply\"])\r\n\r\nt1 = join(tables: {left: descripcion, right: configuracion}, on: [\"_time\"])\r\nt2 = join(tables: {left: t1, right: fecha}, on: [\"_time\"])\r\nt3 = join(tables: {left: t2, right: tiempo}, on: [\"_time\"])\r\nt4 = join(tables: {left: t3, right: trafico}, on: [\"_time\"])\r\nt5 = join(tables: {left: t4, right: packetsize}, on: [\"_time\",\"Intervals\"])\r\n\r\n\r\nt6 = join(tables: {left: t5, right: consumo}, on: [\"_time\",\"Intervals\"])\r\nt6\r\n|> keep(columns:[\"PowerSupply\",\"Intervals\",\"Consumption\",\"StartTime\"])\r\n|> group(columns:[\"PowerSupply\",\"StartTime\"])\r\n|> pivot(rowKey: [\"Intervals\"], columnKey: [\"PowerSupply\"], valueColumn: \"Consumption\")\r\n|> group()\r\n\r\n  \r\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Averages per period of time (PowerSupply)",
+      "type": "barchart"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 40,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "influxdb",
+          "uid": "DS_INFLUXDB"
+        },
+        "definition": "from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> keep(columns: [\"_measurement\"])      // Mantiene solo la columna _measurement\r\n  |> group()                              // Agrupa todos los datos en una sola tabla\r\n  |> distinct(column: \"_measurement\")     // Obtiene valores únicos de _measurement",
+        "includeAll": false,
+        "name": "Device",
+        "options": [],
+        "query": {
+          "query": "from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> keep(columns: [\"_measurement\"])      // Mantiene solo la columna _measurement\r\n  |> group()                              // Agrupa todos los datos en una sola tabla\r\n  |> distinct(column: \"_measurement\")     // Obtiene valores únicos de _measurement"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "influxdb",
+          "uid": "DS_INFLUXDB"
+        },
+        "definition": "from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic Test\")\r\n  |> group(columns: [\"_value\"]) \r\n  |> keep(columns: [\"_value\"])",
+        "includeAll": true,
+        "multi": true,
+        "name": "Description",
+        "options": [],
+        "query": {
+          "query": "from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic Test\")\r\n  |> group(columns: [\"_value\"]) \r\n  |> keep(columns: [\"_value\"])"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "influxdb",
+          "uid": "DS_INFLUXDB"
+        },
+        "definition": "from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Configuration\")\r\n  |> group(columns: [\"_value\"]) \r\n  |> keep(columns: [\"_value\"])",
+        "includeAll": true,
+        "multi": true,
+        "name": "Configuration",
+        "options": [],
+        "query": {
+          "query": "from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Configuration\")\r\n  |> group(columns: [\"_value\"]) \r\n  |> keep(columns: [\"_value\"])"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "influxdb",
+          "uid": "DS_INFLUXDB"
+        },
+        "definition": "from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> group(columns: [\"_value\"]) \r\n  |> keep(columns: [\"_value\"])",
+        "includeAll": true,
+        "multi": true,
+        "name": "Date",
+        "options": [],
+        "query": {
+          "query": "from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> group(columns: [\"_value\"]) \r\n  |> keep(columns: [\"_value\"])"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "influxdb",
+          "uid": "DS_INFLUXDB"
+        },
+        "definition": "tiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n // |> group(columns: [\"_value\"]) \r\n  |> keep(columns: [\"_value\",\"_time\"])\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Date:json}))\r\n  //|> group(columns: [\"_value\"]) \r\n  |> keep(columns: [\"_time\"])\r\n \r\njoin(\r\n  tables: {left: fecha, right: tiempo},\r\n  on: [\"_time\"]\r\n)\r\n|> keep(columns: [\"_value\"])\r\n",
+        "includeAll": true,
+        "multi": true,
+        "name": "Time",
+        "options": [],
+        "query": {
+          "query": "tiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n // |> group(columns: [\"_value\"]) \r\n  |> keep(columns: [\"_value\",\"_time\"])\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => contains(value: r[\"_value\"], set: ${Date:json}))\r\n  //|> group(columns: [\"_value\"]) \r\n  |> keep(columns: [\"_time\"])\r\n \r\njoin(\r\n  tables: {left: fecha, right: tiempo},\r\n  on: [\"_time\"]\r\n)\r\n|> keep(columns: [\"_value\"])\r\n"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "influxdb",
+          "uid": "DS_INFLUXDB"
+        },
+        "definition": "from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n  |> group(columns: [\"_value\"]) \r\n  |> keep(columns: [\"_value\"])",
+        "includeAll": true,
+        "multi": true,
+        "name": "Traffic",
+        "options": [],
+        "query": {
+          "query": "from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n  |> group(columns: [\"_value\"]) \r\n  |> keep(columns: [\"_value\"])"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "influxdb",
+          "uid": "DS_INFLUXDB"
+        },
+        "definition": "from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"PacketSize\")\r\n  |> group(columns: [\"_value\"]) \r\n  |> keep(columns: [\"_value\"])",
+        "includeAll": true,
+        "multi": true,
+        "name": "PacketSize",
+        "options": [],
+        "query": {
+          "query": "from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${Device}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"PacketSize\")\r\n  |> group(columns: [\"_value\"]) \r\n  |> keep(columns: [\"_value\"])"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "Europe/Berlin",
+  "title": "Telemetry InfluxDB Pruebas",
+  "uid": "telemetry-influxdb-pruebas",
+  "version": 5,
+  "weekStart": ""
+}

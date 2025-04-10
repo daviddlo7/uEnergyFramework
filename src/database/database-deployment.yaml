@@ -73,8 +73,6 @@ spec:
           value: initial_bucket
         - name: DOCKER_INFLUXDB_INIT_RETENTION
           value: "0"
-        - name: INFLUXD_HTTP_BASE_PATH
-          value: "/database"
         volumeMounts:
         - mountPath: /var/lib/influxdb2
           name: influxdb-storage
@@ -97,3 +95,4 @@ spec:
   ports:
   - port: 8086
     targetPort: 8086
+    protocol: TCP

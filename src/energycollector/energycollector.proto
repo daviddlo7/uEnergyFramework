@@ -4,6 +4,7 @@ package energycollector;
 
 service EnergyCollector {
   rpc RunTest (TestRequest) returns (TestResponse);
+  rpc RunTest2 (TestParameters) returns (TestResponse);
 }
 
 message TestRequest {
@@ -12,4 +13,20 @@ message TestRequest {
 
 message TestResponse {
   string message = 1;
+}
+
+message TestParameters {
+  repeated string devices_names = 1;
+  string traffic_configuration = 2;
+  string escenario = 3;
+  float total_time = 4;
+  float traffic_change = 5;
+  repeated float traffic = 6;
+  float packet_change = 7;
+  repeated float packet_size = 8;
+  string db = 9;
+  string db_type = 10;
+  bool web_interface = 11;
+  bool debug_mode = 12;
+  bool save_csvs = 13;
 }

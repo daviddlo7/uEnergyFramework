@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 import threading
 import time
 import webbrowser
@@ -17,8 +16,17 @@ from requests.auth import HTTPBasicAuth
 import time
 from energycollector_pb2 import TestResponse
 from energycollector_pb2_grpc import EnergyCollectorServicer
-from analytics_pb2 import AnalyticsRequest
-from analytics_pb2_grpc import AnalyticsStub
+from analytics_pb2 import ProcessTestDataRequest
+from analytics_pb2 import CheckConnectionRequest
+from analytics_pb2_grpc import AnalyticsServiceStub
+from google.protobuf.json_format import MessageToDict
+from analytics_pb2 import Device
+from analytics_pb2 import PowerData
+from analytics_pb2 import Telemetry
+from analytics_pb2 import TestParameters
+from analytics_pb2 import ConfigDataDevice
+from analytics_pb2 import StaticPowerDevice
+from analytics_pb2 import StaticPowerComponent
 
 import logging
 
@@ -46,7 +54,7 @@ for handler in root_logger.handlers:
 class EnergyCollectorServicerImpl(EnergyCollectorServicer):
     def __init__(self):
         self.time_series_db = EnergyCollectorTimeSeriesDB()
-        self.static_db = EnergyCollectorStaticDB()
+    
     def RunTest(self, request, context):
         try:
             default_logger.info(f"Received test request for device: {request.test_data}")
@@ -121,7 +129,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
                 }
             }
 
-            devices_list = {
+            devices_names = {
                 'HL4_5_1_Huawei': devices['HL4_5_1_Huawei'],
                 #'HL5_1_2_Adva': devices['HL5_1_2_Adva'],
                 #'HL_Ufispace': devices['HL_Ufispace'],
@@ -131,21 +139,19 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
             traffic_configuration = "default"
             escenario = "default"
-            total_time = 1
+            total_time = 0.1
             traffic_change = None
             traffic = 0
             packet_change = None
             packet_size = 0
             db = "pruebas"
-            db_type = "influxdb"
             web_interface = False
             debug_mode = True
             save_csvs = False
             stop_event = threading.Event()
-            influxdb_token = "INFLUXDB_MV_TOKEN_ALL_ACCESS"
 
             controller = EnergyControllerMain(
-                devices_list=devices_list,
+                devices_names=devices_names,
                 traffic_configuration=traffic_configuration,
                 escenario=escenario,
                 total_time=total_time,
@@ -154,12 +160,10 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
                 packet_change=packet_change,
                 packet_size=packet_size,
                 db=db,
-                db_type=db_type,
                 web_interface=web_interface,
                 debug_mode=debug_mode,
                 save_csvs=save_csvs,
-                stop_event=stop_event,
-                influxdb_token=influxdb_token
+                stop_event=stop_event
             )
 
             controller.run()
@@ -173,75 +177,170 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             default_logger.error(f"An error occurred while running the test: {e}")
             return TestResponse(message="Error")
 
-    def call_analytics_service(self, name):
+    def RunTest2(self, request, context):
         try:
-            channel = grpc.insecure_channel("10.152.183.13:50051")
-            stub = AnalyticsStub(channel)
+            default_logger.info(f"Received test request for device: {request.total_time}")
 
-            request = AnalyticsRequest(name=name)
-            response = stub.RunAnalytics(request)
+            if not request.total_time:
+                return TestResponse(message="Error: Test_data not provided.")
+            controller = EnergyControllerMain(
+                devices_names=request.devices_names,
+                traffic_configuration=request.traffic_configuration,
+                escenario=request.escenario,
+                total_time=request.total_time,
+                traffic_change=request.traffic_change,
+                traffic=request.traffic,
+                packet_change=request.packet_change,
+                packet_size=request.packet_size,
+                db=request.db,
+                web_interface=request.web_interface,
+                debug_mode=request.debug_mode,
+                save_csvs=request.save_csvs,
+                stop_event=threading.Event()
+            )
 
-            channel.close()
-            return response.message
+            controller.run()
+
+            logger_cli.info("Waiting for the test to complete...")
+            controller.exit_event.wait()  # Esperar hasta que cleanup active el evento
+
+            return TestResponse(message="Test Completed")
 
         except Exception as e:
-            default_logger.error(f"Failed to call Analytics service: {e}")
-            return "Error calling Analytics service"
-    
+            default_logger.error(f"An error occurred while running the test: {e}")
+            return TestResponse(message="Error")
+
     def check_analytics_connection(self):
         try:
             channel = grpc.insecure_channel("10.152.183.13:50051")
-            stub = AnalyticsStub(channel)
+            stub = AnalyticsServiceStub(channel)
 
-            request = AnalyticsRequest(name="CheckConnection")
+            request = CheckConnectionRequest(id="CheckConnection")
             response = stub.CheckConnection(request)
 
             channel.close()
             return response.message
         except Exception as e:
             default_logger.error(f"Failed to call CheckConnection on Analytics service: {e}")
-            return "Error calling CheckConnection"   
-        
-    def analytics_process_test_data(self, test_data):
+            return "Error calling CheckConnection"
+
+    def analytics_process_test_data(self, device_name, test_parameters):
         """
         Calls the Analytics service to process test data.
 
-        :param test_data: A dictionary containing test data to be sent as JSON.
+        :param device_name: Name of the device.
+        :param test_parameters: An instance of TestParameters class.
         :return: Response message from the Analytics service.
         """
         try:
+            # Create a gRPC insecure channel (no TLS)
             channel = grpc.insecure_channel("10.152.183.13:50051")
-            stub = AnalyticsStub(channel)
+            stub = AnalyticsServiceStub(channel)
 
-            json_data = json.dumps(test_data)
+            # Map devices_list to gRPC Device messages
+            devices_names_proto = {
+                name: Device(
+                    ip=device["ip"],
+                    username=device["username"],
+                    password=device["password"],
+                    port=device["port"],
+                    vendor=device["vendor"],
+                    info=device["info"]
+                )
+                for name, device in test_parameters.devices_names.items()
+            }
 
-            logger_cli.info(f"Sending test data to Analytics pod: {test_data}")
-            request = AnalyticsRequest(name="ProcessTestData", data=json_data)
+            # Map devices_telemetry to gRPC Telemetry messages
+            devices_telemetry_proto = {
+                name: Telemetry(times_s=list(telemetry.get("Times_s", [])))
+                for name, telemetry in test_parameters.devices_telemetry.items()
+            }
+
+            # Map power_data_devices to gRPC PowerData messages
+            power_data_devices_proto = {
+                name: PowerData(components_power=device)
+                for name, device in test_parameters.power_data_devices.items()
+            }
+
+            # Map config_data_devices to gRPC ConfigDataDevice messages
+            config_data_devices_proto = {
+                name: ConfigDataDevice(config_details={
+                    key: value["type"]  # Assuming you want to map 'type' as the detail
+                    for key, value in device.items()
+                })
+                for name, device in test_parameters.config_data_devices.items()
+            }
+
+            # Map devices_static_power_dicc to gRPC StaticPowerDevice messages
+            devices_static_power_dicc_proto = {
+                vendor_name: StaticPowerDevice(
+                    components_power_data={
+                        component_name: StaticPowerComponent(
+                            nominal_power_device=component.get("nominal-power", 0),
+                            typical_power_device=component.get("typical-power", 0)
+                        )
+                        for component_name, component in vendor_data.get("transceivers", {}).items()
+                    }
+                )
+                for vendor_name, vendor_data in test_parameters.devices_static_power_dicc.items()
+            }
+
+            # Build the TestParameters gRPC message
+            test_parameters_proto = TestParameters(
+                devices_names=devices_names_proto,
+                traffic_configuration=test_parameters.traffic_configuration,
+                configuration=test_parameters.configuration,
+                escenario=test_parameters.escenario,
+                interval=test_parameters.interval,
+                max_interval=test_parameters.max_interval,
+                traffic_change=test_parameters.traffic_change or 0.0,
+                traffic=test_parameters.traffic or 0.0,
+                actual_traffic=test_parameters.actual_traffic or 0.0,
+                packet_change=test_parameters.packet_change or 0.0,
+                packet_size=test_parameters.packet_size or 0,
+                actual_packet_size=test_parameters.actual_packet_size or 0,
+                initial_time=float(test_parameters.initial_time),
+                initial_datetime=str(test_parameters.initial_datetime),
+                start_date=test_parameters.start_date,
+                start_time=test_parameters.start_time,
+                devices_telemetry=devices_telemetry_proto,
+                power_data_devices=power_data_devices_proto,
+                web_interface=test_parameters.web_interface,
+                config_data_devices=config_data_devices_proto,
+                devices_static_power_dicc=devices_static_power_dicc_proto,
+                debug_mode=test_parameters.debug_mode
+            )
+
+            # Create the gRPC request
+            request = ProcessTestDataRequest(
+                device_name=device_name,
+                test_parameters=test_parameters_proto
+            )
+
+            # Call the remote method
+            logger_cli.info("Sending request:")
+            logger_cli.info(MessageToDict(request))
+
             response = stub.ProcessTestData(request)
-            logger_cli.info(f"Received response from Analytics pod: {response.message}")
-            
+
+            logger_cli.info(f"Response from Analytics service: {response.message}")
+
+            # Close the channel
             channel.close()
+
             return response.message
+
         except Exception as e:
-            default_logger.error(f"Failed to call ProcessTestData on Analytics service: {e}")
+            logger_cli.error(f"Error calling ProcessTestData on Analytics service: {e}")
             return "Error calling ProcessTestData"
 
-    def save_influxdb_instantaneous_data(self, device_name, instantaneous_data, test_data):
-        logger_cli.info("TODO-influxdb: Save instantaneous data in influxDB via API")
-        response = self.time_series_db.save_influxdb(self, device_name, instantaneous_data, test_data)
-        return response
-    
-    def save_data_static(self, device_name, test_parameters, test_statistics):
-        logger_cli.info("TODO-influxdb: Save static data in influxDB via API")
-        response = self.static_db.save_data_static_influxdb(self, device_name, test_parameters, test_statistics)
-        return 0
-
 class EnergyControllerMain:
-    def __init__(self, devices_list, traffic_configuration, escenario, total_time, traffic_change,
-                 traffic, packet_change, packet_size, db, db_type, web_interface, debug_mode, save_csvs, influxdb_token,
+    def __init__(self, devices_names, traffic_configuration, escenario, total_time, traffic_change,
+                 traffic, packet_change, packet_size, db, web_interface, debug_mode, save_csvs,
                  stop_event=None, on_finished=None):
         self.reader = None
-        self.devices_list = devices_list
+        self.devices_list = {}
+        self.devices_names = devices_names
         self.traffic_configuration = traffic_configuration
         self.escenario = escenario
         self.total_time = total_time
@@ -250,16 +349,84 @@ class EnergyControllerMain:
         self.packet_change = packet_change
         self.packet_size = packet_size
         self.db = db
-        self.db_type = db_type
         self.web_interface = web_interface
         self.debug_mode = debug_mode
         self.save_csvs = save_csvs
         self.test_parameters = None
         self.stop_event = stop_event
         self.on_finished = on_finished
-        self.influxdb_token = influxdb_token
         self.exit_event = threading.Event()
         self.energy_collector_servicer = EnergyCollectorServicerImpl()
+        self.time_series_db = EnergyCollectorTimeSeriesDB()
+        self.url_influxdb = "http://10.152.183.14:8086"
+        self.token = "my_admin_token"
+        self.org = "uEnergyOrg"
+        self.bucket = "time_series_db_pruebas"
+        self.all_devices = {
+                    'HL5_1_2_Adva': {
+                        'ip': "10.95.90.126",
+                        'username': "David.Osa",
+                        'password': "9cJk496uLH",
+                        'port': "830",
+                        'yyy': "adva",
+                        'node': '5.5.5.1',
+                        'vendor': 'Adva',
+                        'info': 'ADVA DRX-30',
+                        'interval': 2,
+                        'pdu': None
+                    },
+                    'HL4_5_1_Huawei': {
+                        'ip': "10.95.86.114",
+                        'username': "admintid",
+                        'password': "Huawei!2015",
+                        'port': "830",
+                        'yyy': "huaweiyang",
+                        'node': '4.4.4.2',
+                        'vendor': 'Huawei',
+                        'info': 'HUAWEI NE40E-X2-M8A - VRP (R) software, Version 8.221 (NE40E V800R022C10SPC300T)',
+                        'interval': 5,
+                        'pdu': None
+                    },
+                    'HL_Ufispace': {
+                        'ip': "10.95.90.75",
+                        'username': "dnroot",
+                        'password': "dnroot",
+                        'port': "830",
+                        'yyy': "ufispace",
+                        'node': "-",
+                        'vendor': "Ufispace",
+                        'info': "Ufispace S9700-23D Version: DNOS [18.2.1]build [6]",
+                        'interval': 10,
+                        'pdu': {'PSU_1': '6;OUTLET38'}
+                    },
+                    'HL_Juniper': {
+                        'ip': "10.95.90.84",
+                        'username': "tid",
+                        'password': "jun1per",
+                        'port': "830",
+                        'yyy': "juniper",
+                        'node': "-",
+                        'vendor': "Juniper",
+                        'info': "Juniper JNMX-304 Junos: 23.4R1.9",
+                        'interval': 1,
+                        'pdu': {'PEM_1': '6;OUTLET40'}
+                    },
+                    'HL_Cisco': {
+                        'ip': "10.95.90.150",
+                        'username': "cisco",
+                        'password': "cisco123",
+                        'port': "830",
+                        'yyy': "cisco",
+                        'node': "-",
+                        'vendor': "Cisco",
+                        'info': "Cisco NCS-57B1-6D24-SYS",
+                        'interval': 5,
+                        'pdu': {
+                            'PSU_0': '4;OUTLET24',
+                            'PSU_1': '4;OUTLET28',
+                        }
+                    }
+                }
 
     def setup(self):
         intervals = [device['interval'] for device in self.devices_list.values()]
@@ -270,23 +437,12 @@ class EnergyControllerMain:
             interval = ((max(intervals) + 1 + 4) // 5) * 5
         max_interval = int((self.total_time * 60) / interval)
 
-        time_series_db_name = ''
-        static_db_name = ''
-        telemetry_db_name = ''
-        dashboard_name = ''
+        time_series_db_name = f'time_series_db_{self.db}'
+        static_db_name = f'static_db_{self.db}'
+        telemetry_db_name = f'telemetry_db_{self.db}'
+        dashboard_name = f'dashboard-influxdb-{self.db}'
 
-        if self.db_type == 'influxdb':
-            time_series_db_name = f'time_series_db_{self.db}'
-            static_db_name = f'static_db_{self.db}'
-            telemetry_db_name = f'telemetry_db_{self.db}'
-            dashboard_name = f'dashboard-{self.db_type}-{self.db}'
-        elif self.db_type == 'sql':
-            time_series_db_name = f'../DataBase/time_series_{self.db}.db'
-            static_db_name = f'../DataBase/static_db_{self.db}.db'
-            telemetry_db_name = f'../DataBase/telemetry_db_{self.db}.db'
-            dashboard_name = f'dashboard-{self.db_type}-{self.db}2'
-
-        self.test_parameters = TestParameters(
+        self.test_parameters = TestParametersEnergyCollector(
             devices_list=self.devices_list,
             traffic_configuration=self.traffic_configuration,
             escenario=self.escenario,
@@ -300,8 +456,7 @@ class EnergyControllerMain:
             actual_packet_size=0,
             power_data_devices={},
             web_interface=self.web_interface,
-            debug_mode=self.debug_mode,
-            influxdb_token=self.influxdb_token
+            debug_mode=self.debug_mode
         )
 
         logger_cli.info("Devices: " + ", ".join(self.devices_list.keys()))
@@ -314,9 +469,6 @@ class EnergyControllerMain:
         # Connection with other pods
 
         # Calling pod of DB
-            #self.time_series_db = TimeSeriesDB(self.test_parameters, db_name=time_series_db_name)
-            #self.static_db = StaticDB(self.test_parameters, db_name=static_db_name)
-            #self.telemetry_db = TelemetryDB(self.test_parameters, db_name=telemetry_db_name)
         # Llamada a influx pidiendole los buckets
         influxdb_result = self.get_influxdb_buckets()
         logger_cli.info(f"Result from Influx pod: {influxdb_result}")
@@ -333,11 +485,11 @@ class EnergyControllerMain:
 
         self.test_parameters.devices_telemetry = {}
 
-    def process_device(self, device_name, device_data, test_parameters, reader):
+    def process_device(self, device_name, device_data):
         instantaneous_data_devices = {}
         test_data_devices = {}
 
-        instantaneous_data, test_dict = reader.read_data(test_parameters, device_name, device_data)
+        instantaneous_data, test_dict = self.reader.read_data(self.test_parameters, device_name, device_data)
 
         if not instantaneous_data and not test_dict:
             return
@@ -357,8 +509,7 @@ class EnergyControllerMain:
         logger_cli.info(f'Traffic Packet Size (Bytes): {traffic_packet_size}')
         logger_cli.info(f'Power (W): {power}')
 
-        result = self.energy_collector_servicer.save_influxdb_instantaneous_data("device_name", "instantaneous_data_devices[device_name]","test_data_devices[device_name]")
-        #time_series_db.save_influxdb(device_name, instantaneous_data_devices[device_name],test_data_devices[device_name])
+        result = self.time_series_db.save_influxdb_instantaneous_data("device_name", "instantaneous_data_devices[device_name]","test_data_devices[device_name]")
 
     def event_func(self, interval, max_executions):
         if self.stop_event.is_set():
@@ -375,7 +526,7 @@ class EnergyControllerMain:
             logger_cli.info('Reading power data')
             for device_name, device_data in self.devices_list.items():
                 thread = threading.Thread(target=self.process_device, args=(
-                    device_name, device_data, self.test_parameters, self.reader))
+                    device_name, device_data,))
                 threads.append(thread)
                 thread.start()
 
@@ -391,17 +542,18 @@ class EnergyControllerMain:
             test_statistics_devices = {}
             for device_name, device_data in self.devices_list.items():
                 logger_cli.info("Calling Analytics pod to process test data")
-                test_statistics = self.energy_collector_servicer.analytics_process_test_data(device_name, test_parameters)
+                test_statistics = self.energy_collector_servicer.analytics_process_test_data(device_name, self.test_parameters)
                 test_statistics_devices[device_name] = test_statistics
 
                 logger_cli.info(f"Result from Analytics pod: {test_statistics}")
                 
-                result = self.energy_collector_servicer.save_data_static("device_name", "self.test_parameters", "test_statistics")
+                # result = self.energy_collector_servicer.save_data_static("device_name", "self.test_parameters", "test_statistics")
                 
                 if self.save_csvs:
                     logger_cli.info("TODO-csvs: Call DB Pod to save CSV")
-                    #self.time_series_db.save_csv(self.test_parameters, device_name)
+                    self.time_series_db.save_csv(self.test_parameters, device_name)
 
+            logger_cli.info("TODO-grafana: Change this URL to the new one of Grafana Pod")
             telemetry_url = f'http://192.168.27.7:3000/d/telemetry-influxdb-{self.db}/telemetry-influxdb-{self.db}?orgId=1&from=946684801&to=946684810'
             logger_cli.info(f'Open telemetry with StartDate {self.test_parameters.start_date} '
                   f'and StartTime {self.test_parameters.start_time} in URL: {telemetry_url}')
@@ -418,6 +570,13 @@ class EnergyControllerMain:
         self.exit_event.set()
 
     def run(self):
+        logger_cli.info(f"All Devices: {self.all_devices}")
+        for device_name in self.devices_names:
+            logger_cli.info(f"Devices Name: {device_name}")
+            if device_name in self.all_devices:
+                self.devices_list[device_name] = self.all_devices[device_name]
+            else:
+                logger_cli.error(f"Device {device_name} not available")
         self.setup()
         logger_cli.info('Reading configuration data')
         self.reader.complete_devices_configuration(self.test_parameters)
@@ -444,7 +603,7 @@ class EnergyControllerMain:
         self.cleanup()
     
     def test_grafana_connection(self):
-        grafana_url = "http://10.152.183.149:3000"
+        grafana_url = "http://10.152.183.15:3000"
         result = {"status_code": None, "response_text": None, "error": None}
 
         try:
@@ -477,7 +636,7 @@ class EnergyControllerMain:
             result["error"] = str(e)
             return f"Error: {result['error']}"
 
-class TestParameters:
+class TestParametersEnergyCollector: # TODO Create TestParameters
     """
     Class to store the parameters used during the respective test.
 
@@ -507,7 +666,7 @@ class TestParameters:
                  escenario=None, interval=None, max_interval=None, traffic_change=None, traffic=None,
                  actual_traffic=None, packet_change=None, packet_size=None, actual_packet_size=None,
                  initial_time=None, initial_datetime=None, devices_telemetry=None, power_data_devices=None,
-                 web_interface=True, config_data_devices=None, devices_static_power_dicc=None, debug_mode=False, influxdb_token=None):
+                 web_interface=True, config_data_devices=None, devices_static_power_dicc=None, debug_mode=False):
         self.devices_list = devices_list
         self.traffic_configuration = traffic_configuration
         self.configuration = {}
@@ -525,7 +684,6 @@ class TestParameters:
         self.devices_telemetry = devices_telemetry
         self.power_data_devices = power_data_devices
         self.web_interface = web_interface
-        self.influxdb_token = influxdb_token
 
         now = datetime.now()
         self.start_time = now.strftime("%H-%M-%S")
@@ -721,6 +879,9 @@ class TestParameters:
         attrs = ',\n  '.join(f"{key}={value!r}" for key, value in self.__dict__.items())
         return f"TestParameters(\n  {attrs}\n)"
 
+    def to_dict(self):
+        return self.__dict__
+
 class Reader:
     """
     Class in charge of reading the energy consumption data of all equipment and displaying it in the given YANG format.
@@ -731,7 +892,6 @@ class Reader:
     def __init__(self):
         pass
 
-    # noinspection PyTypeChecker
     def read_data(self, test_parameters, device_name, device_data):
         """
         Function that collects data from devices
@@ -1214,245 +1374,6 @@ class Reader:
         else:
             return file
 
-    def parse_board_power_huawei(self, cli_text, power_data, device_name, info):
-        if info.find("NE40E-X8") != -1:
-            if info.find("NE40E V800R022C10") != -1:
-                chassis_power = ".         Chassis  "
-                space = "        "
-                for line in cli_text.splitlines()[7:12]:
-                    line = line.replace(" ", "")
-                    variable, value = line.split(":")
-                    try:
-                        chassis_power = chassis_power + "{:.2f}".format(float(value)) + space
-                    except:
-                        continue
-                    space = space + "    "
-
-                board_power = self.extractDataBetweenLines(cli_text, 14, 5)
-                cli_text = board_power.splitlines()[:1] + [chassis_power] + board_power.splitlines()[1:]
-                cli_text = os.linesep.join([line for line in cli_text if line])
-            else:
-                cli_text = self.extractDataBetweenLines(cli_text, 6, 5)
-                cli_text = cli_text.replace('------------------------------------------------------------------', '')
-                cli_text = os.linesep.join([line for line in cli_text.splitlines() if line])
-        elif info.find("ATN") != -1:
-            if info.find("ATN 950C V800R022C10") != -1:
-                chassis_power = ".         Chassis  "
-                space = "        "
-                for line in cli_text.splitlines()[9:13]:
-                    line = line.replace(" ", "")
-                    variable, value = line.split(":")
-                    try:
-                        chassis_power = chassis_power + "{:.2f}".format(float(value)) + space
-                    except:
-                        continue
-                    space = space + "    "
-
-                board_power = self.extractDataBetweenLines(cli_text, 15, 5)
-                cli_text = board_power.splitlines()[:1] + [chassis_power] + board_power.splitlines()[1:]
-                cli_text = os.linesep.join([line for line in cli_text if line])
-            else:
-                cli_text = self.extractDataBetweenLines(cli_text, 5, 5)
-                cli_text = cli_text.replace('--------------------------------------------------------------------', '')
-                cli_text = os.linesep.join([line for line in cli_text.splitlines() if line])
-        elif info.find("NE40E-X2") != 1:
-            if info.find("NE40E V800R022C10") != -1:
-                chassis_power = ".         Chassis  "
-                space = "        "
-                for line in cli_text.splitlines()[6:11]:
-                    line = line.replace(" ", "")
-                    variable, value = line.split(":")
-                    try:
-                        chassis_power = chassis_power + "{:.2f}".format(float(value)) + space
-                    except:
-                        continue
-                    space = space + "    "
-
-                board_power = self.extractDataBetweenLines(cli_text, 12, 5)
-                cli_text = board_power.splitlines()[:1] + [chassis_power] + board_power.splitlines()[1:]
-                cli_text = os.linesep.join([line for line in cli_text if line])
-            else:
-                indexes = []
-                parse_text = ""
-                lines = cli_text.split('\n')
-                for number, line in enumerate(cli_text.splitlines()):
-                    if 'Slot' in line:
-                        indexes.append(number)
-                for n, index in enumerate(indexes):
-
-                    if n == 0:
-                        cli_text = parse_text + lines[index + 1]
-
-                    cli_text = cli_text + '\n' + lines[index + 3]
-
-                cli_text = os.linesep.join([line for line in cli_text.splitlines() if line])
-
-        name = info.split(' ')[0]
-        version = info.split(' ')[1]
-        power_data_equipo = {
-            'Name': f'{name} {version}'
-        }
-        count = 0
-        variables = {}
-
-        for line in cli_text.splitlines():
-            if count == 0:
-                variables = line.split()
-            else:
-                valores = line.split()
-                power_data_equipo[count] = dict(zip(variables, valores))
-            count += 1
-        power_data[device_name] = power_data_equipo
-        return power_data
-
-    def parse_board_power_adva(self, cli_text, power_data, device_name):
-        """
-        Function that converts the text returned by the command line of ADVA devices to a python dictionary.
-        Args:
-            cli_text: text returned by the command
-            power_data: dictionary with all energy data of all equipment
-            device_name: device name
-
-        Returns: updated power_data with new device power information
-
-        """
-        cli_text = cli_text.replace(
-            '===========================================================================================', '')
-        cli_text = cli_text.replace(
-            '-------------------------------------------------------------------------------------------', '')
-
-        cli_text = os.linesep.join([line for line in cli_text.splitlines() if line])
-        power_data_equipo = dict()
-        count = 0
-        variables = {}
-
-        for line in cli_text.splitlines():
-            if count == 0:
-                variables = line.split()
-            elif count > 2:
-                valores = line.split()
-                power_data_equipo[count] = dict(zip(variables, valores))
-            count += 1
-        power_data[device_name] = power_data_equipo
-        return power_data
-
-    def parse_board_power_cisco(self, cli_text, power_data, device_name):
-        """
-        Function that converts the text returned by the command line of CISCO devices to a python dictionary.
-        Args:
-            cli_text: text returned by the command
-            power_data: dictionary with all energy data of all equipment
-            device_name: device name
-
-        Returns: updated power_data with new device power information
-
-        """
-        board_power = self.extractDataBetweenLines(cli_text, 6, 8)
-        cli_text = os.linesep.join([line for line in board_power.splitlines() if line])
-
-        dict = {}
-        power_data_equipo = {}
-        for line in cli_text.splitlines():
-            line = line.replace(" ", "")
-            variable, valor = line.split(":")
-            valor = valor.replace("W", "")
-            dict.update({variable: valor})
-        power_data_equipo[0] = dict
-        power_data[device_name] = power_data_equipo
-        return power_data
-
-    def parse_board_power_ufispace(self, cli_text, power_data, device_name):
-        """
-        Function that converts the text returned by the command line of UFISPACE devices to a python dictionary.
-        Args:
-            cli_text: text returned by the command
-            power_data: dictionary with all energy data of all equipment
-            device_name: device name
-
-        Returns: updated power_data with new device power information
-
-        """
-        cli_text = self.extractDataBetweenLines(cli_text, 10, 0)
-
-        power_data_equipo = {}
-        variable_actual = None
-
-        for line in cli_text.splitlines():
-            if line != '':
-                if line.find('PSU') != -1:
-                    variable_actual = line.split(':')[0]
-                    power_data_equipo[variable_actual] = {}
-                    continue
-                if line.find('Node') != -1:
-                    variable_actual = "Node"
-                    power_data_equipo[variable_actual] = {}
-                    continue
-
-                if variable_actual.find('PSU') != -1:
-                    value, valor = line.split(':')
-                    power_data_equipo[variable_actual][value.lstrip('\t')] = valor.lstrip(' ')
-                elif variable_actual == 'Node':
-                    if line.find('Zone') == -1:
-                        value, valor = line.split(':')
-                        power_data_equipo[variable_actual][value.lstrip('\t')] = valor.lstrip(' ')
-
-        power_data[device_name] = power_data_equipo
-        return power_data
-
-    def parse_board_power_juniper(self, cli_text, power_data, device_name):
-        """
-        Function that converts the text returned by the command line of JUNIPER devices to a python dictionary.
-        Args:
-            cli_text: text returned by the command
-            power_data: dictionary with all energy data of all equipment
-            device_name: device name
-
-        Returns: updated power_data with new device power information
-
-        """
-        power_data_equipo = {}
-        variable_actual = None
-
-        for line in cli_text.splitlines():
-            if line != '':
-                if line.find('PEM') != -1:
-                    variable_actual = line
-                    power_data_equipo[variable_actual] = {}
-                    continue
-                if line.find('System') != -1:
-                    variable_actual = "System"
-                    power_data_equipo[variable_actual] = {}
-                    continue
-                elif line.find('Item') != -1:
-                    variable_actual = "Item"
-                    power_data_equipo[variable_actual] = {}
-                    continue
-
-                if variable_actual.find('PEM') != -1:
-                    value, valor = line.split(':')
-                    power_data_equipo[variable_actual][value.lstrip(' ')] = valor.lstrip(' ')
-                elif variable_actual == 'System':
-                    if line.find('Zone') == -1:
-                        value, valor = line.split(':')
-                        power_data_equipo[variable_actual][value.lstrip(' ')] = valor.lstrip(' ')
-                elif variable_actual == 'Item':
-                    if line.find('Fan') != -1:
-                        line = ';'.join(line.split())
-                        variable, value = [line.split(';')[0] + line.split(';')[1] + line.split(';')[2] + ' (W)',
-                                           line.split(';')[3]]
-                        power_data_equipo[variable_actual][variable] = value
-                    elif line.find('SFB') != -1 or line.find('FPC') != -1:
-                        line = ';'.join(line.split())
-                        variable, value = [line.split(';')[0] + line.split(';')[1] + ' (W)', line.split(';')[2]]
-                        power_data_equipo[variable_actual][variable] = value
-                    elif line.find('RE') != -1:
-                        line = ';'.join(line.split())
-                        variable, value = [line.split(';')[0] + ' (W)', line.split(';')[1]]
-                        power_data_equipo[variable_actual][variable] = value
-
-        power_data[device_name] = power_data_equipo
-        return power_data
-
     def extractDataBetweenLines(self, cli_text, start_lines, end_lines):
         """
         additional function to remove uninteresting data from the command output, removing lines at both the beginning
@@ -1482,9 +1403,6 @@ class Reader:
                                                                 test_parameters)
 
         return power_info_cli, power_info_pdu
-
-    def yang_to_dict(self, txt_name):
-        return {}
 
     def parse_to_yang(self, device_name, power_data_cli, power_info_pdu):
         if os.path.exists('/app/Files/instantaneous_device_energy_tid.yang'):
@@ -1707,26 +1625,6 @@ class Reader:
             i += 1
 
         return dict
-
-    def add_test_to_yang(self, instantaneous_data_yang, datetime, actual_time, throughput, packet_size,
-                         test_parameters):
-        test_dict = self.parse_yang_file("../Files/Test.yang")
-        test_dict['Traffic']['DateTime'] = datetime
-        test_dict['Traffic']['Times_s'] = actual_time
-        test_dict['Traffic']['Throughput_Gbps'] = throughput
-        test_dict['Traffic']['PacketSize_B'] = packet_size
-
-        test_dict['Configuration']['TrafficConfiguration'] = test_parameters.traffic_configuration
-        test_dict['Configuration']['Configuration'] = test_parameters.configuration
-        test_dict['Configuration']['Scenario'] = test_parameters.escenario
-        test_dict['Configuration']['StartTime'] = test_parameters.start_time
-        test_dict['Configuration']['StartDate'] = test_parameters.start_date
-
-        for key in instantaneous_data_yang.keys():
-            instantaneous_data_yang[key]['Test'] = test_dict
-            #value['Test'] = test_dict
-
-        return instantaneous_data_yang
 
     def parse_cli(self, cli_text, device_name, info, type):
         power_data_equipo = {}
@@ -2352,63 +2250,6 @@ class Reader:
 
         device_dict['device-power-information']['power'] = power
 
-    def complete_device_telemetry(self, test_parameters, instantaneous_data_yang, test_dict):
-
-        '''if not instantaneous_data_yang:
-            for key, value in test_parameters.device_telemetry.items():
-                if key != 'Times' or key != 'DateTime':
-                    value = 0
-            return'''
-
-        for key, value in test_parameters.device_telemetry.items():
-            if key != 'Times' or key != 'DateTime':
-                value = 0
-
-        for key in test_parameters.device_telemetry.keys():
-            if key == 'DateTime':
-                test_parameters.device_telemetry[key].append(
-                    test_dict['Test'][key].strftime("%Y-%m-%d %H:%M:%S"))
-            elif key == 'Times_s':
-                test_parameters.device_telemetry[key].append(
-                    test_dict['Test']['Times'])
-            elif key == 'Throughput_Gbps':
-                test_parameters.device_telemetry[key].append(
-                    instantaneous_data_yang[test_parameters.device_name]['device-power-information'][
-                        'performance-metrics']['traffic-throughput'])
-            elif key == 'PacketSize_B':
-                test_parameters.device_telemetry[key].append(
-                    instantaneous_data_yang[test_parameters.device_name]['device-power-information'][
-                        'performance-metrics']['traffic-packet-size'])
-            elif key == 'Chassis_':
-                test_parameters.device_telemetry[key].append(
-                    instantaneous_data_yang[test_parameters.device_name]['device-power-information']['power'])
-            elif key == 'System (W)':
-                test_parameters.device_telemetry[key].append(
-                    instantaneous_data_yang[test_parameters.device_name]['device-power-information']['power'])
-            elif 'CRXT' in key:
-                test_parameters.device_telemetry[key].append(
-                    instantaneous_data_yang[test_parameters.device_name]['device-power-information']['power'])
-            elif 'NodePower' in key:
-                test_parameters.device_telemetry[key].append(
-                    instantaneous_data_yang[test_parameters.device_name]['device-power-information']['power'])
-            elif any(substring in key for substring in ['PIC', 'NPU', 'MPU']):
-                for index, dictionary in enumerate(
-                        instantaneous_data_yang[test_parameters.device_name]['device-power-information'][
-                            'boards']):
-                    if dictionary.get("Name") == key:
-                        test_parameters.device_telemetry[key].append(
-                            instantaneous_data_yang[test_parameters.device_name]['device-power-information'][
-                                'boards'][index]['power'])
-                        break
-            else:
-                for index, dictionary in enumerate(
-                        instantaneous_data_yang[test_parameters.device_name]['device-power-information']['components']):
-                    if dictionary.get("name") == key:
-                        test_parameters.device_telemetry[key].append(
-                            instantaneous_data_yang[test_parameters.device_name]['device-power-information'][
-                                'components'][index]['power'])
-                        break
-
     def cli_configuration_data(self, device, device_name, test_parameters):
         """
         Function that makes the CLI call to the device.
@@ -2588,12 +2429,10 @@ class EnergyCollectorTimeSeriesDB:
     def __init__(self):
         pass
     
-    def save_influxdb(self, device_name, data, test_dict):
+    def save_influxdb_instantaneous_data(self, device_name, instantaneous_data, test_data):
+        logger_cli.info("TODO-influxdb: Save instantaneous data in influxDB via API")
         return 0
     
-class EnergyCollectorStaticDB:
-    def __init__(self):
-        pass
-    
-    def save_data_static_influxdb(self, device_name, test_parameters, test_statistics):
+    def save_csv(self, test_parameters, device_name):
+        logger_cli.info("TODO-CSVs: Save instantaneous data in influxDB via API")
         return 0

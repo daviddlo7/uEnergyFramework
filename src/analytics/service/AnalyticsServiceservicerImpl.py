@@ -1,16 +1,35 @@
 import logging
 from analytics_pb2 import AnalyticsResponse
-from analytics_pb2_grpc import AnalyticsServicer
+from analytics_pb2_grpc import AnalyticsServiceServicer
 import math
 import numpy as np
 from scipy.stats import t
-LOGGER = logging.getLogger(__name__)
+import logging
+import os
 
-class AnalyticsServicerImpl(AnalyticsServicer):
+logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
+
+default_logger = logging.getLogger("defaultLogger")
+default_logger.setLevel(logging.INFO)
+
+logger_cli = logging.getLogger("logger_cli")
+logger_cli.setLevel(logging.INFO)
+
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(message)s') 
+handler.setFormatter(formatter)
+logger_cli.addHandler(handler)
+logger_cli.propagate = False
+
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+for handler in root_logger.handlers:
+    handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
+
+class AnalyticsServiceServicerImpl(AnalyticsServiceServicer):
     def __init__(self):
-        self.time_series_db = AnalyticsTimeSeriesDB()
-        self.analytics_db = AnalyticsTelemetryDB()
-        self.static_db = AnalyticsStaticDB()
+        self.analytics = Analytics()
+
 
     def CheckConnection(self, request, context):
         """
@@ -21,38 +40,53 @@ class AnalyticsServicerImpl(AnalyticsServicer):
         :return: A response message indicating success or error.
         """
         try:
-            LOGGER.info(f"Received CheckConnection request with name: {request.name}")
-            if request.name == "CheckConnection":  # Verifica que el nombre sea válido
+            logger_cli.info(f"Received CheckConnection request with name: {request.id}")
+            if request.id == "CheckConnection":  # Verifica que el nombre sea válido
                 return AnalyticsResponse(message="OK")
             else:
                 return AnalyticsResponse(message="Error: Invalid operation name.")
         except Exception as e:
-            LOGGER.error(f"An error occurred while handling CheckConnection: {e}")
+            logger_cli.error(f"An error occurred while handling CheckConnection: {e}")
             return AnalyticsResponse(message="Error")
-    
+
     def ProcessTestData(self, request, context):
         """
         Handles the ProcessTestData RPC call.
 
-        :param request: The incoming request containing the JSON data as a string.
+        :param request: The incoming request containing test parameters.
         :param context: The gRPC context.
         :return: A response message indicating success or error.
         """
         try:
-            LOGGER.info(f"Received ProcessTestData request with data: {request.data}")
-            
-            if request.data:
-                LOGGER.info("Processing test data...")
-                
-                # Aquí comienza la implementación de la funcionalidad para procesar los datos JSON recibidos.
-                # Puedes deserializar el JSON, realizar validaciones, ejecutar lógica de negocio o cualquier
-                # otro procesamiento necesario antes de devolver una respuesta.
-                
-                return AnalyticsResponse(message="OK")
-            else:
-                return AnalyticsResponse(message="Error: No data provided.")
+            # Convert Protobuf object to a Python dictionary
+            def convert_to_dict(proto_obj):
+                """
+                Recursively converts a Protobuf object to a Python dictionary.
+                """
+                if isinstance(proto_obj, dict):
+                    return {k: convert_to_dict(v) for k, v in proto_obj.items()}
+                elif isinstance(proto_obj, list):
+                    return [convert_to_dict(v) for v in proto_obj]
+                elif hasattr(proto_obj, "ListFields"):
+                    return {field.name: convert_to_dict(getattr(proto_obj, field.name)) for field in
+                            proto_obj.DESCRIPTOR.fields}
+                else:
+                    return proto_obj
+
+            # Extract device name and test parameters
+            device_name = request.device_name
+            test_parameters = convert_to_dict(request.test_parameters)
+
+            logger_cli.error(f"DATOS TEST PARAMETERS: {test_parameters}")
+
+            # Call the analytics function with the converted dictionary
+            self.analytics.process_test_data_influxdb(device_name, test_parameters)
+
+            # Return success response
+            return AnalyticsResponse(message="OK")
+
         except Exception as e:
-            LOGGER.error(f"An error occurred while processing test data: {e}")
+            logger_cli.error(f"An error occurred while processing test data: {e}")
             return AnalyticsResponse(message="Error")
 
 class Analytics:
@@ -66,15 +100,15 @@ class Analytics:
     """
 
     def __init__(self):
-        self.analytics_servicer = AnalyticsServicerImpl()
-
-    def process_test_data_sql(self, test_parameters, time_series_db, telemetry_db):
-        test_data = time_series_db.query_filtered_data(test_parameters)
-        test_statistics = self.test_statistics(test_data, test_parameters)
-        telemetry_db.save_in_database_sql(
-            test_statistics) 
-        self.export_to_excel(test_statistics, test_parameters)
-        return test_statistics
+        self.time_series_db = AnalyticsTimeSeriesDB()
+        self.analytics_db = AnalyticsTelemetryDB()
+        self.static_db = AnalyticsStaticDB()
+        self.url_influxdb = "http://10.152.183.14:8086"
+        self.token = "my_admin_token"
+        self.org = "uEnergyOrg"
+        self.time_series_bucket = "time_series_db_pruebas"
+        self.telemetry_bucket = "telemetry_db_pruebas"
+        self.static_bucket = "static_db_pruebas"
 
     def test_statistics(self, test_data, test_parameters, all_components):
         times_values = []
@@ -296,26 +330,43 @@ class Analytics:
 
         return test_statistics
 
-    def export_to_excel(self, test_statistics, test_parameters):
-        pass
-
     def save_in_database(self, test_statistics):
         pass
 
-    def process_test_data_influxdb(self, device_name, test_parameters, time_series_db, telemetry_db):
-        test_data, all_components = time_series_db.influx_filtered_data(device_name, test_parameters)
+    def process_test_data_influxdb(self, device_name, test_parameters):
+        test_data, all_components = self.time_series_db.influx_filtered_data(device_name, test_parameters)
+        logger_cli.info(f"Test Data and All Components: {test_data} y {all_components}")
         test_statistics = self.test_statistics_influxdb(device_name, test_data, test_parameters, all_components)
-        telemetry_db.save_in_database_influxdb(test_statistics)
-        return test_statistics
+        logger_cli.info(f"TestStatistics: {test_data} y {all_components}")
+        self.telemetry_db.save_in_database_influxdb(test_statistics)
+        self.static_db.save_data_static(device_name, test_parameters, test_statistics)
 
 class AnalyticsTimeSeriesDB:
     def __init__(self):
         pass
 
+    def query_filtered_data(self, test_parameters):
+        logger_cli.info("TODO-influxdb: Create this function")
+        pass
+    
+    def influx_filtered_data(self, device_name, test_parameters):
+        logger_cli.info("TODO-influxdb: Create this function")
+        test_data = None
+        all_components = None
+        return test_data, all_components
+
 class AnalyticsTelemetryDB:
     def __init__(self):
         pass
 
+    def save_in_database_influxdb(self, test_statistics):
+        logger_cli.info("TODO-influxdb: Create this function")
+        pass
+
 class AnalyticsStaticDB:
     def __init__(self):
+        pass
+
+    def save_data_static(self, device_name, test_parameters, test_statistics):
+        logger_cli.info("TODO-influxdb: Create this function")
         pass

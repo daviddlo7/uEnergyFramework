@@ -5,7 +5,7 @@ from common.Settings import get_service_host, get_service_port_grpc
 from common.Constants import ServiceNameEnum
 
 from analytics_pb2 import AnalyticsRequest
-from analytics_pb2_grpc import AnalyticsStub
+from analytics_pb2_grpc import AnalyticsServiceStub
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class AnalyticsClient:
         Establish a connection to the gRPC server.
         """
         self.channel = grpc.insecure_channel(self.endpoint)
-        self.stub = AnalyticsStub(self.channel)
+        self.stub = AnalyticsServiceStub(self.channel)
 
     def close(self):
         """
