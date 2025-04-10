@@ -2,6 +2,8 @@
 microk8s enable dns
 microk8s enable storage
 microk8s enable ingress
+microk8s enable metallb:192.168.1.200-192.168.1.220
+
 if ! grep -q "192.168.1.200 webui.uenergyframework database.uenergyframework grafana.uenergyframework" /etc/hosts; then
   echo "192.168.1.200 webui.uenergyframework database.uenergyframework grafana.uenergyframework" | sudo tee -a /etc/hosts > /dev/null
   echo "Added '192.168.1.200 webui.uenergyframework database.uenergyframework grafana.uenergyframework' to /etc/hosts"
