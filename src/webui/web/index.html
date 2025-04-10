@@ -1,14 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EnergyFramework</title>
-    <script type="module" src="js/scripts.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebUI</title>
 </head>
 <body>
-    <h1>EnergyFramework</h1>
-    <button id="RunTest">Run Test</button>
-    <div id="Result"></div>
+  <h1>WebUI - Prueba de gRPC</h1>
+  <form id="grpcForm">
+    <label for="testData">Introduce datos de prueba:</label>
+    <input type="text" id="testData" name="testData" required>
+    <button type="submit">Enviar</button>
+  </form>
+  <p id="response"></p>
+
+  <script src="./js/scripts.js"></script>
 </body>
 </html>

@@ -3,37 +3,71 @@ from concurrent import futures
 from grpc_reflection.v1alpha import reflection
 import os
 import logging
+from flask import Flask, request, jsonify
 from webui_pb2_grpc import add_WebUIServicer_to_server
 from webui_pb2 import DESCRIPTOR as WEBUI_DESCRIPTOR
 from service.WebUIServiceservicerImpl import WebUIServicerImpl
+import energycollector_pb2
+import energycollector_pb2_grpc
+import require
 
-# Configure logging
+# Configuración del cliente gRPC para EnergyCollector
+ENERGYCOLLECTOR_SERVICE_IP = '10.152.183.12'  # IP del servicio energycollector-service
+ENERGYCOLLECTOR_SERVICE_PORT = '50051'
+
+# Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Custom gRPC settings
-GRPC_MAX_WORKERS = 10
+# Crear la aplicación Flask
+app = Flask(__name__)
+
+def call_energycollector(test_data):
+    """Función que realiza la llamada gRPC al servicio EnergyCollector."""
+    try:
+        logger.info(f"Conectando a {ENERGYCOLLECTOR_SERVICE_IP}:{ENERGYCOLLECTOR_SERVICE_PORT}")
+        with grpc.insecure_channel(f'{ENERGYCOLLECTOR_SERVICE_IP}:{ENERGYCOLLECTOR_SERVICE_PORT}') as channel:
+            stub = energycollector_pb2_grpc.EnergyCollectorStub(channel)
+            logger.info(f"Enviando solicitud gRPC con test_data: {test_data}")
+            request = energycollector_pb2.TestRequest(test_data=test_data)
+            response = stub.RunTest(request)
+            logger.info(f"Respuesta recibida del servidor gRPC: {response.message}")
+            return response.message
+    except Exception as e:
+        logger.error(f"Error al llamar al servicio gRPC: {e}")
+        return {"error": str(e)}
+
+
+@app.route('/run-test', methods=['POST'])
+def run_test():
+    """Endpoint HTTP para manejar solicitudes desde la aplicación web."""
+    try:
+        data = request.get_json()
+        test_data = data.get("test_data", "")
+        if not test_data:
+            return jsonify({"error": "test_data is required"}), 400
+
+        # Llamada al servicio gRPC de EnergyCollector
+        result = call_energycollector(test_data)
+        return jsonify({"result": result})
+
+    except Exception as e:
+        logger.error(f"Error en run-test: {e}")
+        return jsonify({"error": str(e)}), 500
 
 class WebUIService:
-    """
-    WebUIService implements a gRPC server for the WebUI service.
-    """
+    """Clase para manejar el servidor gRPC."""
 
     def __init__(self):
-        """
-        Initializes the gRPC server and the service implementation.
-        """
-        self.port = os.getenv("GRPC_PORT", "50051")  # Default port for WebUI service
-        self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=GRPC_MAX_WORKERS))
-        self.servicer = WebUIServicerImpl()  # Service implementation
+        self.port = os.getenv("GRPC_PORT", "50053")  # Cambiar puerto para evitar conflicto con Flask
+        self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+        self.servicer = WebUIServicerImpl()
 
     def install_servicers(self):
-        """
-        Registers the service implementation and enables reflection.
-        """
+        """Registrar servicios y habilitar reflexión."""
         add_WebUIServicer_to_server(self.servicer, self.server)
 
-        # Enable reflection for debugging tools like grpcurl
+        # Habilitar reflexión para herramientas como grpcurl
         service_names = [
             WEBUI_DESCRIPTOR.services_by_name["WebUI"].full_name,
             reflection.SERVICE_NAME,
@@ -41,24 +75,25 @@ class WebUIService:
         reflection.enable_server_reflection(service_names, self.server)
 
     def start(self):
-        """
-        Starts the gRPC server and waits for termination.
-        """
-        try:
-            self.install_servicers()
-            self.server.add_insecure_port(f"[::]:{self.port}")
-            logger.info(f"WebUI server running on port {self.port}...")
-            self.server.start()
-            self.server.wait_for_termination()
-        except Exception as e:
-            logger.error(f"Error starting WebUI server: {e}")
+        """Iniciar el servidor gRPC."""
+        self.install_servicers()
+        self.server.add_insecure_port(f"[::]:{self.port}")
+        logger.info(f"Servidor gRPC escuchando en puerto {self.port}...")
+        self.server.start()
 
     def stop(self):
-        """
-        Stops the gRPC server gracefully.
-        """
-        try:
-            logger.info("Stopping WebUI server...")
-            self.server.stop(0)
-        except Exception as e:
-            logger.error(f"Error stopping WebUI server: {e}")
+        """Detener el servidor gRPC."""
+        logger.info("Deteniendo servidor gRPC...")
+        self.server.stop(0)
+
+if __name__ == '__main__':
+    # Iniciar ambos servidores (Flask y gRPC) en paralelo
+    from threading import Thread
+
+    # Iniciar Flask en un hilo separado
+    flask_thread = Thread(target=lambda: app.run(host='0.0.0.0', port=50052))
+    flask_thread.start()
+
+    # Iniciar el servidor gRPC
+    grpc_service = WebUIService()
+    grpc_service.start()

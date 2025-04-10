@@ -1,25 +1,22 @@
-import * as pb from './energycollector_pb.js';
-import * as grpcWeb from './energycollector_grpc_web_pb.js';
-
-const grpcServiceUrl = 'http://localhost/grpc-web/';
-
-const client = new grpcWeb.EnergyCollectorClient(grpcServiceUrl);
-
-function runGrpcTest() {
-    const request = new pb.TestRequest();
-    request.setTestData('test_data');
-
-    client.runTest(request, {}, (err, response) => {
-        const resultElement = document.getElementById('Result');
-
-        if (err) {
-            console.error('Error en la llamada gRPC:', err.message);
-            resultElement.textContent = `Error: ${err.message}`;
-        } else {
-            console.log('Respuesta del servidor:', response.getMessage());
-            resultElement.textContent = `Respuesta: ${response.getMessage()}`;
-        }
-    });
-}
-
-document.getElementById('RunTest').addEventListener('click', runGrpcTest);
+document.getElementById('grpcForm').addEventListener('submit', async (event) => {
+    event.preventDefault(); // Evita que la página se recargue
+    const testData = document.getElementById('testData').value;
+  
+    try {
+      const response = await fetch('/run-test', { // Llamada al endpoint /run-test
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ test_data: testData }), // Envía los datos del formulario como JSON
+      });
+  
+      if (response.ok) {
+        const result = await response.json();
+        document.getElementById('response').textContent = `Respuesta del servidor: ${result.result}`;
+      } else {
+        document.getElementById('response').textContent = `Error: ${response.statusText}`;
+      }
+    } catch (error) {
+      document.getElementById('response').textContent = `Error de conexión: ${error.message}`;
+    }
+  });
+  
