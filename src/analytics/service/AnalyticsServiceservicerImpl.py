@@ -10,6 +10,7 @@ from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 from zoneinfo import ZoneInfo
 from datetime import datetime
+from google.protobuf.descriptor import FieldDescriptor
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
 
@@ -65,24 +66,41 @@ class AnalyticsServiceServicerImpl(AnalyticsServiceServicer):
             # Convert Protobuf object to a Python dictionary
             def convert_to_dict(proto_obj):
                 """
-                Recursively converts a Protobuf object to a Python dictionary.
+                Convierte recursivamente un objeto Protobuf a un diccionario de Python,
+                incluyendo campos con sus valores por defecto y tratando correctamente los
+                campos map para que se retornen como diccionarios, no como listas.
                 """
                 if isinstance(proto_obj, dict):
                     return {k: convert_to_dict(v) for k, v in proto_obj.items()}
                 elif isinstance(proto_obj, list):
-                    return [convert_to_dict(v) for v in proto_obj]
-                elif hasattr(proto_obj, "ListFields"):
-                    return {field.name: convert_to_dict(getattr(proto_obj, field.name)) for field in
-                            proto_obj.DESCRIPTOR.fields}
+                    return [convert_to_dict(item) for item in proto_obj]
+                elif hasattr(proto_obj, "DESCRIPTOR"):
+                    result = {}
+                    for field in proto_obj.DESCRIPTOR.fields:
+                        value = getattr(proto_obj, field.name)
+                        # Si es un campo de tipo map, se procesa como un diccionario:
+                        if field.message_type and field.message_type.GetOptions().map_entry:
+                            result[field.name] = {}
+                            for k, v in value.items():
+                                result[field.name][k] = convert_to_dict(v)
+                        else:
+                            # Si es un mensaje (submensaje)
+                            if field.cpp_type == FieldDescriptor.CPPTYPE_MESSAGE:
+                                if field.label == FieldDescriptor.LABEL_REPEATED:
+                                    result[field.name] = [convert_to_dict(item) for item in value]
+                                else:
+                                    result[field.name] = convert_to_dict(value)
+                            else:
+                                # Para campos escalares o enumerados, se asigna el valor directamente (incluso si es el valor por defecto)
+                                result[field.name] = value
+                    return result
                 else:
                     return proto_obj
 
             # Extract device name and test parameters
             device_name = request.device_name
             test_parameters = convert_to_dict(request.test_parameters)
-
-            logger_cli.error(f"DATOS TEST PARAMETERS: {test_parameters}")
-
+            logger_cli.info(f"Test_parametesr: {test_parameters}")
             # Call the analytics function with the converted dictionary
             self.analytics.process_test_data_influxdb(device_name, test_parameters)
 
@@ -125,12 +143,12 @@ class Analytics:
 
         start_time = None
 
-        if test_parameters.traffic_change is None and test_parameters.packet_change is None:
+        if test_parameters.traffic_change == 0 and test_parameters.packet_change == 0:
             interval = test_parameters.max_interval * test_parameters.interval
         else:
-            if test_parameters.traffic_change is None:
+            if test_parameters.traffic_change == 0:
                 interval = test_parameters.packet_change
-            elif test_parameters.packet_change is None:
+            elif test_parameters.packet_change == 0:
                 interval = test_parameters.traffic_change
             else:
                 interval = min(test_parameters.traffic_change, test_parameters.packet_change)
@@ -145,7 +163,7 @@ class Analytics:
                     components_data[data].append(float(record['InstantaneousPower_Device_W']))
                 else:
                     components_data[data].append(float(record[data]))
-            if start_time is None:
+            if start_time == 0:
                 start_time = times_value
 
             if max(times_values) + test_parameters.interval > interval * n_intervalos or key == len(
@@ -204,130 +222,139 @@ class Analytics:
         return test_statistics
 
     def test_statistics_influxdb(self, device_name, test_data, test_parameters, all_components):
-        times_values = []
-        n_intervalos = 1
+        try:
+            times_values = []
+            n_intervalos = 1
 
-        components_data = {component: [] for component in all_components}
-        components_dict = {component: {} for component in all_components}
-        test_statistics = {
-            'Name': device_name,
-            'Configuration': test_parameters["configuration"][device_name],
-            'Traffic Test': test_parameters["traffic_configuration"],
-            'Start Date': test_parameters["start_date"],
-            'Start Time': test_parameters["start_time"]
-        }
+            components_data = {component: [] for component in all_components}
+            components_dict = {component: {} for component in all_components}
+            test_statistics = {
+                'Name': device_name,
+                'Configuration': test_parameters["configuration"][device_name],
+                'Traffic Test': test_parameters["traffic_configuration"],
+                'Start Date': test_parameters["start_date"],
+                'Start Time': test_parameters["start_time"]
+            }
 
-        start_time = None
+            logger_cli.info(f"Test_statitstics first: {test_statistics}")
 
-        if test_parameters["traffic_change"] is None and test_parameters["packet_change"] is None:
-            interval = test_parameters["max_interval"] * test_parameters["interval"]
-        else:
-            if test_parameters["traffic_change"] is None:
-                interval = test_parameters["packet_change"]
-            elif test_parameters["packet_change"] is None:
-                interval = test_parameters["traffic_change"]
+            start_time = None
+
+            if test_parameters["traffic_change"] == 0 and test_parameters["packet_change"] == 0:
+                interval = test_parameters["max_interval"] * test_parameters["interval"]
             else:
-                interval = min(test_parameters["traffic_change"], test_parameters["packet_change"])
-
-        for key in test_data.keys():
-            record = test_data[key]
-            times_value = float(record["Times"])
-            times_values.append(times_value)
-
-            for data in components_data:
-                if data == 'Device':
-                    components_data[data].append(float(record['power_device']))
+                if test_parameters["traffic_change"] == 0:
+                    interval = test_parameters["packet_change"]
+                elif test_parameters["packet_change"] == 0:
+                    interval = test_parameters["traffic_change"]
                 else:
-                    components_data[data].append(float(record[data]))
-            if start_time is None:
-                start_time = times_value
+                    interval = min(test_parameters["traffic_change"], test_parameters["packet_change"])
 
-            if max(times_values) > interval * n_intervalos or key == len(test_data.keys()) - 1:
-                if max(times_values) > interval * test_parameters["max_interval"]:
-                    break
-                start_interval = round((math.floor(times_values[0] / interval) * interval) / 60, 2)
-                end_interval = round((math.ceil(times_values[-1] / interval) * interval) / 60, 2)
-                interval_key = f"{start_interval}-{end_interval}"
+            logger_cli.info(f"Interval: {interval}")
 
-                if interval_key not in test_statistics:
-                    try:
-                        test_statistics[interval_key] = {
-                            "StartTime": start_interval,
-                            "EndTime": end_interval,
-                            "Time Interval": f"{start_interval}-{end_interval}",
-                            "Traffic": test_parameters["traffic"] if test_parameters["traffic_change"] is None else
-                            test_parameters["traffic"][n_intervalos - 1],
-                            "PacketSize": test_parameters["packet_size"] if test_parameters["packet_change"] is None else
-                            test_parameters["packet_size"][n_intervalos - 1]
-                        }
-                    except IndexError:
-                        break
-
-                nivel_significativo = 0.05
+            for key in test_data.keys():
+                record = test_data[key]
+                times_value = float(record["Times"])
+                times_values.append(times_value)
 
                 for data in components_data:
-                    values = components_data[data]
-                    if len(values) != 0:
-                        avg_value = float(np.mean(values))
-                        std_value = float(np.std(values))
-                        min_value = float(np.min(values))
-                        max_value = float(np.max(values))
-                        n = float(len(values))
-                        dof = n - 1
-
-                        t_value = t.ppf(1 - nivel_significativo / 2, dof)
-
-                        margin_error = float(t_value * (std_value / np.sqrt(n)))
-                        if np.isnan(margin_error):
-                            margin_error = 0
-
-                        # Ahora añadir el nuevo valor bajo la clave data
-                        data_dict = {
-                            "Average": round(avg_value, 2),
-                            "Min": round(min_value, 2),
-                            "Max": round(max_value, 2),
-                            "Sample Size": n,  # El tamaño de la muestra no necesita redondeo
-                            "Standard Deviation": round(std_value, 2),
-                            "Margin of Error (95% CI)": round(margin_error, 2),
-                            "Confidence Interval (95%)": f"{round(avg_value, 2):.2f} +- {round(margin_error, 2):.2f}"
-                        }
-
-                    else:
-                        data_dict = {
-                            "Average": None,
-                            "Min": None,
-                            "Max": None,
-                            "Sample Size": None,
-                            "Standard Deviation": None,
-                            "Margin of Error (95% CI)": None,
-                            "Confidence Interval (95%)": None
-                        }
-
-                    element_type = None
                     if data == 'Device':
-                        test_statistics[interval_key][data] = data_dict
+                        components_data[data].append(float(record['power_device']))
                     else:
-                        if any(sub_string in data for sub_string in ['PIC', 'MPU', 'NPU']):
-                            element_type = 'Boards'
-                        elif any(sub_string in data for sub_string in ['PSU', 'PowerSupply', 'PS', 'PEM', 'CRXT', 'PM']):
-                            element_type = 'PowerSupplies'
-                        elif any(sub_string in data for sub_string in ['Transceiver', 'TrRx', 'TRX']):
-                            element_type = 'Transceivers'
+                        components_data[data].append(float(record[data]))
+                if start_time == 0:
+                    start_time = times_value
+
+                if max(times_values) > interval * n_intervalos or key == len(test_data.keys()) - 1:
+                    if max(times_values) > interval * test_parameters["max_interval"]:
+                        break
+                    start_interval = round((math.floor(times_values[0] / interval) * interval) / 60, 2)
+                    end_interval = round((math.ceil(times_values[-1] / interval) * interval) / 60, 2)
+                    interval_key = f"{start_interval}-{end_interval}"
+
+                    if interval_key not in test_statistics:
+                        try:
+                            test_statistics[interval_key] = {
+                                "StartTime": start_interval,
+                                "EndTime": end_interval,
+                                "Time Interval": f"{start_interval}-{end_interval}",
+                                "Traffic": test_parameters["traffic"] if test_parameters["traffic_change"] == 0 else
+                                test_parameters["traffic"][n_intervalos - 1],
+                                "PacketSize": test_parameters["packet_size"] if test_parameters["packet_change"] == 0 else
+                                test_parameters["packet_size"][n_intervalos - 1]
+                            }
+                        except IndexError:
+                            break
+
+                    nivel_significativo = 0.05
+
+                    for data in components_data:
+                        values = components_data[data]
+                        if len(values) != 0:
+                            avg_value = float(np.mean(values))
+                            std_value = float(np.std(values))
+                            min_value = float(np.min(values))
+                            max_value = float(np.max(values))
+                            n = float(len(values))
+                            dof = n - 1
+
+                            t_value = t.ppf(1 - nivel_significativo / 2, dof)
+
+                            margin_error = float(t_value * (std_value / np.sqrt(n)))
+                            if np.isnan(margin_error):
+                                margin_error = 0
+
+                            # Ahora añadir el nuevo valor bajo la clave data
+                            data_dict = {
+                                "Average": round(avg_value, 2),
+                                "Min": round(min_value, 2),
+                                "Max": round(max_value, 2),
+                                "Sample Size": n,  # El tamaño de la muestra no necesita redondeo
+                                "Standard Deviation": round(std_value, 2),
+                                "Margin of Error (95% CI)": round(margin_error, 2),
+                                "Confidence Interval (95%)": f"{round(avg_value, 2):.2f} +- {round(margin_error, 2):.2f}"
+                            }
+
                         else:
-                            element_type = 'Components'
-                        if element_type is not None:
-                            if element_type not in test_statistics[interval_key]:
-                                test_statistics[interval_key][element_type] = {}
-                            test_statistics[interval_key][element_type][data] = data_dict
+                            data_dict = {
+                                "Average": None,
+                                "Min": None,
+                                "Max": None,
+                                "Sample Size": None,
+                                "Standard Deviation": None,
+                                "Margin of Error (95% CI)": None,
+                                "Confidence Interval (95%)": None
+                            }
 
-                times_values = []
-                for data in components_data:
-                    components_data[data] = []
+                        element_type = None
+                        if data == 'Device':
+                            test_statistics[interval_key][data] = data_dict
+                        else:
+                            if any(sub_string in data for sub_string in ['PIC', 'MPU', 'NPU']):
+                                element_type = 'Boards'
+                            elif any(sub_string in data for sub_string in ['PSU', 'PowerSupply', 'PS', 'PEM', 'CRXT', 'PM']):
+                                element_type = 'PowerSupplies'
+                            elif any(sub_string in data for sub_string in ['Transceiver', 'TrRx', 'TRX']):
+                                element_type = 'Transceivers'
+                            else:
+                                element_type = 'Components'
+                            if element_type is not None:
+                                if element_type not in test_statistics[interval_key]:
+                                    test_statistics[interval_key][element_type] = {}
+                                test_statistics[interval_key][element_type][data] = data_dict
 
-                n_intervalos += 1
-                components_data = {component: [] for component in all_components}
+                    times_values = []
+                    for data in components_data:
+                        components_data[data] = []
 
-        return test_statistics
+                    n_intervalos += 1
+                    components_data = {component: [] for component in all_components}
+
+            logger_cli.info(f"Test_statitstics final: {test_statistics}")
+            return test_statistics
+        except Exception as e:
+            logger_cli.error(f"Error in test_statitstics: {e}")
+
 
     def save_in_database(self, test_statistics):
         pass
@@ -335,7 +362,10 @@ class Analytics:
     def process_test_data_influxdb(self, device_name, test_parameters):
         logger_cli.info(f"Pocessing test data influx")
         test_data, all_components = self.time_series_db.influx_filtered_data(device_name, test_parameters)
-        logger_cli.info(f"DATOS PROCESS_TEST_DATA_INFLUX: {test_data} y {all_components}")
+        logger_cli.info(f"Device name: {device_name}")
+        logger_cli.info(f"Test_data: {test_data}")
+        logger_cli.info(f"Test Parameters: {test_parameters}")
+        logger_cli.info(f"all_components: {all_components}")
         test_statistics = self.test_statistics_influxdb(device_name, test_data, test_parameters, all_components)
         logger_cli.info(f"DATOS TEST_STATISTICS: {test_statistics}")
         self.telemetry_db.save_in_database_influxdb(test_statistics)
