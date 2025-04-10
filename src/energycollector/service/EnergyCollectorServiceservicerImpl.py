@@ -570,8 +570,9 @@ class EnergyControllerMain:
         self.exit_event.set()
 
     def run(self):
-        logger_cli.info(f"Devices: {self.devices_names}")
+        logger_cli.info(f"All Devices: {self.all_devices}")
         for device_name in self.devices_names:
+            logger_cli.info(f"Devices Name: {device_name}")
             if device_name in self.all_devices:
                 self.devices_list[device_name] = self.all_devices[device_name]
             else:
