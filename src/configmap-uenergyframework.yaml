@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configmap-uenergyframework
+  namespace: uenergyframework
+data:
+  datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: InfluxDB
+        type: influxdb
+        access: proxy
+        url: http://10.152.183.14:8086
+        basicAuth: true
+        basicAuthUser: admin_user
+        basicAuthPassword: admin_password123
+        jsonData:
+          version: Flux
+          organization: uEnergyOrg
+          defaultBucket: initial_bucket
+          tlsSkipVerify: true
+        secureJsonData:
+          token: my_admin_token
+        uid: DS_INFLUXDB
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards
