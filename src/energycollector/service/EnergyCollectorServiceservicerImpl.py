@@ -145,12 +145,10 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             packet_change = None
             packet_size = 0
             db = "pruebas"
-            db_type = "influxdb"
             web_interface = False
             debug_mode = True
             save_csvs = False
             stop_event = threading.Event()
-            influxdb_token = "INFLUXDB_MV_TOKEN_ALL_ACCESS"
 
             controller = EnergyControllerMain(
                 devices_names=devices_names,
@@ -162,12 +160,10 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
                 packet_change=packet_change,
                 packet_size=packet_size,
                 db=db,
-                db_type=db_type,
                 web_interface=web_interface,
                 debug_mode=debug_mode,
                 save_csvs=save_csvs,
-                stop_event=stop_event,
-                influxdb_token=influxdb_token
+                stop_event=stop_event
             )
 
             controller.run()
@@ -183,9 +179,9 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
     def RunTest2(self, request, context):
         try:
-            default_logger.info(f"Received test request for device: {request.test_data}")
+            default_logger.info(f"Received test request for device: {request.total_time}")
 
-            if not request.test_data:
+            if not request.total_time:
                 return TestResponse(message="Error: Test_data not provided.")
             controller = EnergyControllerMain(
                 devices_names=request.devices_names,
@@ -197,12 +193,10 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
                 packet_change=request.packet_change,
                 packet_size=request.packet_size,
                 db=request.db,
-                db_type=request.db_type,
                 web_interface=request.web_interface,
                 debug_mode=request.debug_mode,
                 save_csvs=request.save_csvs,
-                stop_event=threading.Event(),
-                influxdb_token=request.influxdb_token
+                stop_event=threading.Event()
             )
 
             controller.run()
@@ -314,8 +308,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
                 web_interface=test_parameters.web_interface,
                 config_data_devices=config_data_devices_proto,
                 devices_static_power_dicc=devices_static_power_dicc_proto,
-                debug_mode=test_parameters.debug_mode,
-                influxdb_token=test_parameters.influxdb_token
+                debug_mode=test_parameters.debug_mode
             )
 
             # Create the gRPC request
@@ -343,7 +336,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
 class EnergyControllerMain:
     def __init__(self, devices_names, traffic_configuration, escenario, total_time, traffic_change,
-                 traffic, packet_change, packet_size, db, db_type, web_interface, debug_mode, save_csvs, influxdb_token,
+                 traffic, packet_change, packet_size, db, web_interface, debug_mode, save_csvs,
                  stop_event=None, on_finished=None):
         self.reader = None
         self.devices_list = {}
@@ -356,14 +349,12 @@ class EnergyControllerMain:
         self.packet_change = packet_change
         self.packet_size = packet_size
         self.db = db
-        self.db_type = db_type
         self.web_interface = web_interface
         self.debug_mode = debug_mode
         self.save_csvs = save_csvs
         self.test_parameters = None
         self.stop_event = stop_event
         self.on_finished = on_finished
-        self.influxdb_token = influxdb_token
         self.exit_event = threading.Event()
         self.energy_collector_servicer = EnergyCollectorServicerImpl()
         self.time_series_db = EnergyCollectorTimeSeriesDB()
@@ -446,21 +437,10 @@ class EnergyControllerMain:
             interval = ((max(intervals) + 1 + 4) // 5) * 5
         max_interval = int((self.total_time * 60) / interval)
 
-        time_series_db_name = ''
-        static_db_name = ''
-        telemetry_db_name = ''
-        dashboard_name = ''
-
-        if self.db_type == 'influxdb':
-            time_series_db_name = f'time_series_db_{self.db}'
-            static_db_name = f'static_db_{self.db}'
-            telemetry_db_name = f'telemetry_db_{self.db}'
-            dashboard_name = f'dashboard-{self.db_type}-{self.db}'
-        elif self.db_type == 'sql':
-            time_series_db_name = f'../DataBase/time_series_{self.db}.db'
-            static_db_name = f'../DataBase/static_db_{self.db}.db'
-            telemetry_db_name = f'../DataBase/telemetry_db_{self.db}.db'
-            dashboard_name = f'dashboard-{self.db_type}-{self.db}2'
+        time_series_db_name = f'time_series_db_{self.db}'
+        static_db_name = f'static_db_{self.db}'
+        telemetry_db_name = f'telemetry_db_{self.db}'
+        dashboard_name = f'dashboard-influxdb-{self.db}'
 
         self.test_parameters = TestParametersEnergyCollector(
             devices_list=self.devices_list,
@@ -476,8 +456,7 @@ class EnergyControllerMain:
             actual_packet_size=0,
             power_data_devices={},
             web_interface=self.web_interface,
-            debug_mode=self.debug_mode,
-            influxdb_token=self.influxdb_token
+            debug_mode=self.debug_mode
         )
 
         logger_cli.info("Devices: " + ", ".join(self.devices_list.keys()))
@@ -591,6 +570,7 @@ class EnergyControllerMain:
         self.exit_event.set()
 
     def run(self):
+        logger_cli.info(f"Devices: {self.devices_names}")
         for device_name in self.devices_names:
             if device_name in self.all_devices:
                 self.devices_list[device_name] = self.all_devices[device_name]
@@ -685,7 +665,7 @@ class TestParametersEnergyCollector: # TODO Create TestParameters
                  escenario=None, interval=None, max_interval=None, traffic_change=None, traffic=None,
                  actual_traffic=None, packet_change=None, packet_size=None, actual_packet_size=None,
                  initial_time=None, initial_datetime=None, devices_telemetry=None, power_data_devices=None,
-                 web_interface=True, config_data_devices=None, devices_static_power_dicc=None, debug_mode=False, influxdb_token=None):
+                 web_interface=True, config_data_devices=None, devices_static_power_dicc=None, debug_mode=False):
         self.devices_list = devices_list
         self.traffic_configuration = traffic_configuration
         self.configuration = {}
@@ -703,7 +683,6 @@ class TestParametersEnergyCollector: # TODO Create TestParameters
         self.devices_telemetry = devices_telemetry
         self.power_data_devices = power_data_devices
         self.web_interface = web_interface
-        self.influxdb_token = influxdb_token
 
         now = datetime.now()
         self.start_time = now.strftime("%H-%M-%S")

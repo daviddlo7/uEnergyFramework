@@ -17,3 +17,19 @@ kubectl logs -f -n uenergyframework $(kubectl get pods -n uenergyframework --no-
 # Terminal 3 -> Run Test gRPC EnergyCollector
 
 grpcurl -plaintext -d '{"test_data": "{test_data}"}' 10.152.183.12:50051 energycollector.EnergyCollector/RunTest
+
+# Run test 2 with TestParameters
+grpcurl -plaintext -d '{
+  "devices_names": ["HL4_5_1_Huawei"],
+  "traffic_configuration": "IDLE",
+  "escenario": "huawei",
+  "total_time": 1,
+  "traffic_change": 0,
+  "traffic": 0,
+  "packet_change": 0,
+  "packet_size": 0,
+  "db": "pruebas",
+  "web_interface": false,
+  "debug_mode": false,
+  "save_csvs": false
+}' 10.152.183.12:50051 energycollector.EnergyCollector/RunTest2

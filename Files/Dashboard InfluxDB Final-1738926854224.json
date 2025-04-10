@@ -86,7 +86,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
+        "uid": "DS_INFLUXDB"
       },
       "description": "",
       "fieldConfig": {
@@ -144,7 +144,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
+            "uid": "DS_INFLUXDB"
           },
           "query": "typical = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"typical-power-device\")\r\n  |> last()\r\n  |> map(fn: (r) => ({\r\n      r with\r\n      _value: string(v: r._value)\r\n  }))\r\n  |> keep(columns: [\"_time\",\"_value\",\"_measurement\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" }))\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"_measurement\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n  |> map(fn: (r) => ({\r\n      r with\r\n       \"Type\": \"Typical Consumption\"\r\n    }))\r\n\r\nmaximum_traffic = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"maximum-traffic-throughput\")\r\n  |> last()\r\n  |> map(fn: (r) => ({\r\n      r with\r\n      _value: string(v: r._value)\r\n  }))\r\n  //|> rename(columns: { \"_value\": \"MaximumTraffic\" })\r\n |> keep(columns: [\"_time\",  \"_value\",\"_measurement\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" }))\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"_measurement\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n  |> map(fn: (r) => ({\r\n      r with\r\n       \"Type\": \"Throughput\"\r\n    }))\r\n\r\n\r\nmaximum_consumption = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"max-power\")\r\n  |> last()\r\n  |> map(fn: (r) => ({\r\n      r with\r\n      _value: string(v: r._value)\r\n  }))\r\n  |> keep(columns: [\"_time\",\"_value\",\"_measurement\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" }))\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"_measurement\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n  |> map(fn: (r) => ({\r\n      r with\r\n       \"Type\": \"Maximum Consumption\"\r\n    }))\r\n\r\nefficiency = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"efficiency\")\r\n  |> last()\r\n  |> map(fn: (r) => ({\r\n      r with\r\n      _value: string(v: r._value)\r\n  }))\r\n  |> keep(columns: [\"_time\",\"_value\",\"_measurement\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" }))\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"_measurement\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n  |> map(fn: (r) => ({\r\n      r with\r\n       \"Type\": \"Efficiency\"\r\n    }))\r\n\r\nnominal = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"nominal-power\")\r\n  |> last()\r\n  |> map(fn: (r) => ({\r\n      r with\r\n      _value: string(v: r._value)\r\n  }))\r\n  |> keep(columns: [\"_time\",\"_value\",\"_measurement\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" }))\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"_measurement\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n  |> map(fn: (r) => ({\r\n      r with\r\n       \"Type\": \"Nominal Power\"\r\n    }))\r\nunion(tables:[maximum_traffic,typical,maximum_consumption,efficiency,nominal])\r\n //|> pivot(rowKey:[\"${deviceName}\"], columnKey: [\"Type\"], valueColumn: \"${deviceName}\")\r\n\r\n\r\n\r\n",
           "refId": "A"
@@ -185,7 +185,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
+        "uid": "DS_INFLUXDB"
       },
       "fieldConfig": {
         "defaults": {
@@ -242,7 +242,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
+            "uid": "DS_INFLUXDB"
           },
           "query": "import \"join\"\r\nvalores = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"power-supply\"] != \"\")\r\n  |> group(columns:[\"power-supply\",\"name\"])\r\n  //|> last()\r\n  |> keep(columns:[\"power-supply\",\"_field\",\"_value\",\"name\",\"_time\"])\r\n  |> group()\r\n\r\ntiempo = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"power-supply\"] != \"\")\r\n  |> group(columns:[\"power-supply\",\"name\"])\r\n  |> last()\r\n  |> keep(columns:[\"_time\"])\r\n\r\njoin.time(method:\"left\",left: tiempo, right: valores, as: (l, r) => ({r with timepo: l._time}))\r\n  |> filter(fn: (r) => r[\"_field\"] == \"typical-power\" or r[\"_field\"] == \"nominal-power\" or r[\"_field\"] == \"capacity\")\r\n  |> unique()\r\n  |> rename(columns:{_field:\"parameters\",\"power-supply\":\"type\"})\r\n  |> keep(columns:[\"parameters\",\"type\",\"name\",\"_value\"])",
           "refId": "A"
@@ -254,7 +254,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
+        "uid": "DS_INFLUXDB"
       },
       "fieldConfig": {
         "defaults": {
@@ -310,7 +310,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
+            "uid": "DS_INFLUXDB"
           },
           "query": "import \"join\"\r\nvalores = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"boards\"] != \"\")\r\n  |> group(columns:[\"boards\",\"name\"])\r\n  //|> last()\r\n  |> keep(columns:[\"boards\",\"_field\",\"_value\",\"name\",\"_time\"])\r\n  |> group()\r\n\r\ntiempo = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"boards\"] != \"\")\r\n  |> group(columns:[\"boards\",\"name\"])\r\n  |> last()\r\n  |> keep(columns:[\"_time\"])\r\n\r\njoin.time(method:\"left\",left: tiempo, right: valores, as: (l, r) => ({r with timepo: l._time}))\r\n  |> filter(fn: (r) => r[\"_field\"] == \"typical-power\" or r[\"_field\"] == \"nominal-power\" or r[\"_field\"] == \"capacity\")\r\n  |> unique()\r\n  |> rename(columns:{_field:\"parameters\",\"boards\":\"type\"})\r\n  |> keep(columns:[\"parameters\",\"type\",\"name\",\"_value\"])",
           "refId": "A"
@@ -322,7 +322,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
+        "uid": "DS_INFLUXDB"
       },
       "fieldConfig": {
         "defaults": {
@@ -378,7 +378,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
+            "uid": "DS_INFLUXDB"
           },
           "query": "import \"join\"\r\nvalores = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"transceivers\"] != \"\")\r\n  |> group(columns:[\"transceivers\",\"name\"])\r\n  //|> last()\r\n  |> keep(columns:[\"transceivers\",\"_field\",\"_value\",\"name\",\"_time\"])\r\n  |> group()\r\n\r\ntiempo = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"transceivers\"] != \"\")\r\n  |> group(columns:[\"transceivers\",\"name\"])\r\n  |> last()\r\n  |> keep(columns:[\"_time\"])\r\n\r\njoin.time(method:\"left\",left: tiempo, right: valores, as: (l, r) => ({r with timepo: l._time}))\r\n  |> filter(fn: (r) => r[\"_field\"] == \"typical-power\" or r[\"_field\"] == \"nominal-power\" or r[\"_field\"] == \"capacity\")\r\n  |> unique()\r\n  |> rename(columns:{_field:\"parameters\",\"transceivers\":\"type\"})\r\n  |> keep(columns:[\"parameters\",\"type\",\"name\",\"_value\"])",
           "refId": "A"
@@ -390,7 +390,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
+        "uid": "DS_INFLUXDB"
       },
       "fieldConfig": {
         "defaults": {
@@ -446,7 +446,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
+            "uid": "DS_INFLUXDB"
           },
           "query": "import \"join\"\r\nvalores = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"components\"] != \"\")\r\n  |> group(columns:[\"components\",\"name\"])\r\n  //|> last()\r\n  |> keep(columns:[\"components\",\"_field\",\"_value\",\"name\",\"_time\"])\r\n  |> group()\r\n\r\ntiempo = from(bucket: \"static_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\r\n  |> filter(fn: (r) => r[\"components\"] != \"\")\r\n  |> group(columns:[\"components\",\"name\"])\r\n  |> last()\r\n  |> keep(columns:[\"_time\"])\r\n\r\njoin.time(method:\"left\",left: tiempo, right: valores, as: (l, r) => ({r with timepo: l._time}))\r\n  |> filter(fn: (r) => r[\"_field\"] == \"typical-power\" or r[\"_field\"] == \"nominal-power\" or r[\"_field\"] == \"capacity\")\r\n  |> unique()\r\n  |> rename(columns:{_field:\"parameters\",\"components\":\"type\"})\r\n  |> keep(columns:[\"parameters\",\"type\",\"name\",\"_value\"])",
           "refId": "A"
@@ -471,7 +471,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
+        "uid": "DS_INFLUXDB"
       },
       "fieldConfig": {
         "defaults": {
@@ -588,7 +588,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
+            "uid": "DS_INFLUXDB"
           },
           "query": "startDate = from(bucket: \"time_series_db_final\")\r\n          |> range(start: 0)\r\n          |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n          |> filter(fn: (r) => r[\"_field\"] == \"StartDate\")\r\n          |> filter(fn: (r) => r[\"_value\"] == \"${StartDate}\")\r\n          |> rename(columns: { \"_value\": \"StartDate\" })\r\n\r\nstartTime = from(bucket: \"time_series_db_final\")\r\n          |> range(start: 0)\r\n          |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n          |> filter(fn: (r) => r[\"_field\"] == \"StartTime\")\r\n          |> filter(fn: (r) => r[\"_value\"] == \"${StartTime}\")\r\n          |> rename(columns: { \"_value\": \"StartTime\" })\r\n          \r\ninstantaneousPower = from(bucket: \"time_series_db_final\")\r\n          |> range(start: 0)\r\n          |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n          |> filter(fn: (r) => r[\"_field\"] == \"power_device\")\r\n          |> map(fn: (r) => ({\r\n              r with _value: int(v: r._value)\r\n          }))\r\n          |> rename(columns: { \"_value\": \"PowerConsumption\" })\r\n\r\nthroughput = from(bucket: \"time_series_db_final\")\r\n          |> range(start: 0)\r\n          |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n          |> filter(fn: (r) => r[\"_field\"] == \"traffic_throughput\")\r\n          |> rename(columns: { \"_value\": \"Throughput\" })\r\nt1 = join(tables: {start: startDate, power: startTime}, on: [\"_time\"])\r\nt2 = join(tables: {start: t1, power: instantaneousPower}, on: [\"_time\"])\r\nt3 = join(tables: {start: t2, power: throughput}, on: [\"_time\"])\r\nt3\r\n  |> keep(columns: [\"PowerConsumption\",\"_time\",\"Throughput\"])\r\n",
           "refId": "A"
@@ -600,7 +600,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
+        "uid": "DS_INFLUXDB"
       },
       "fieldConfig": {
         "defaults": {
@@ -670,7 +670,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
+            "uid": "DS_INFLUXDB"
           },
           "query": "from(bucket: \"time_series_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"Inst Info\"] == \"perfomance-metrics\")\r\n  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))\r\n  |> last()\r\n  |> group(columns:[\"Inst Info\"])\r\n  |> keep(columns:[\"_value\",\"_field\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" })) // Agrega una clave ficticia\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"_field\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n",
           "refId": "A"
@@ -682,7 +682,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
+        "uid": "DS_INFLUXDB"
       },
       "fieldConfig": {
         "defaults": {
@@ -752,7 +752,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
+            "uid": "DS_INFLUXDB"
           },
           "query": "from(bucket: \"time_series_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"Inst Info\"] == \"components\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"power\")\r\n  |> last()\r\n  |> group()\r\n  |> keep(columns:[\"_value\",\"component\"])\r\n  |> rename(columns: { \"_value\": \"Power\" ,\"component\":\"Components\"})",
           "refId": "A"
@@ -764,7 +764,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
+        "uid": "DS_INFLUXDB"
       },
       "fieldConfig": {
         "defaults": {
@@ -834,7 +834,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
+            "uid": "DS_INFLUXDB"
           },
           "query": "from(bucket: \"time_series_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"Inst Info\"] == \"boards\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"power\")\r\n  |> last()\r\n  |> group()\r\n  |> keep(columns:[\"_value\",\"board\"])",
           "refId": "A"
@@ -846,7 +846,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
+        "uid": "DS_INFLUXDB"
       },
       "fieldConfig": {
         "defaults": {
@@ -922,7 +922,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
+            "uid": "DS_INFLUXDB"
           },
           "hide": false,
           "query": "tiempo=from(bucket: \"time_series_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"power_device\")\r\n  |> last()\r\n  |> keep(columns:[\"_time\"])\r\n\r\n\r\nout=from(bucket: \"time_series_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"Inst Info\"] == \"power-supplies\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"output_power\")\r\n  |> last()\r\n  |> group()\r\n  |> keep(columns:[\"_value\",\"power_supply\",\"_time\"])\r\noutAjustado = join(tables:{left:tiempo,right:out},on:[\"_time\"])\r\n  |>keep(columns:[\"_value\",\"power_supply\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" }))\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"power_supply\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n   |> map(fn: (r) => ({\r\n      r with\r\n       \"Type\": \"Output Power\"\r\n    }))\r\n\r\nin=from(bucket: \"time_series_db_final\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"Inst Info\"] == \"power-supplies\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"input_power\")\r\n  |> last()\r\n  |> group()\r\n  |> keep(columns:[\"_value\",\"power_supply\",\"_time\"])\r\ninAjustado = join(tables:{left:tiempo,right:in},on:[\"_time\"])\r\n  |>keep(columns:[\"_value\",\"power_supply\"])\r\n  |> map(fn: (r) => ({ r with rowKey: \"single_row\" }))\r\n  |> pivot(rowKey: [\"rowKey\"], columnKey: [\"power_supply\"], valueColumn: \"_value\")\r\n  |> drop(columns: [\"rowKey\"])\r\n   |> map(fn: (r) => ({\r\n      r with\r\n       \"Type\": \"Input Power\"\r\n    }))\r\n    \r\nunion(tables: [inAjustado, outAjustado])\r\n\r\n\r\n\r\n\r\n",
@@ -942,7 +942,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${DS_INFLUXDB}"
+        "uid": "DS_INFLUXDB"
       },
       "fieldConfig": {
         "defaults": {
@@ -1063,7 +1063,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
+            "uid": "DS_INFLUXDB"
           },
           "query": "tiempo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Time\")\r\n  |> filter(fn: (r) => r[\"_value\"] == \"${StartTime}\")\r\n\r\nfecha = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Start Date\")\r\n  |> filter(fn: (r) => r[\"_value\"] == \"${StartDate}\")\r\n\r\ntrafico = from(bucket: \"telemetry_db_pruebas\")\r\n          |> range(start: 0)\r\n          |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n          |> filter(fn: (r) => r[\"_field\"] == \"Traffic\")\r\n          |> rename(columns: { \"_value\": \"Throughput\" })\r\n\r\nconsumptionIntervalo = from(bucket: \"telemetry_db_pruebas\")\r\n  |> range(start: 0)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"${deviceName}\")\r\n  |> filter(fn: (r) => r[\"Power\"] == \"Device\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"Average\")\r\n  |> group()\r\n  |> rename(columns: { \"_value\": \"AveragePower\" })\r\n  |> keep(columns: [\"_time\",\"AveragePower\",\"Intervals\"])\r\n\r\nt1 = join(tables: {start: fecha, power: tiempo}, on: [\"_time\"])\r\n  |> keep(columns: [\"_time\"])\r\nt2 = join(tables: {start: t1, power: trafico}, on: [\"_time\"])\r\n  |> group()\r\n  |> keep(columns: [\"_time\",\"Intervals\",\"Throughput\"])\r\njoin(tables: {start: t2, power: consumptionIntervalo}, on: [\"_time\",\"Intervals\"])\r\n|> keep(columns: [\"Intervals\",\"Throughput\",\"AveragePower\"])\r\n//|> group()\r\n//union(tables: [t2, consumptionIntervalo])\r\n",
           "refId": "A"

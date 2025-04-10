@@ -29,5 +29,4 @@ message TestParameters {
   bool web_interface = 11;
   bool debug_mode = 12;
   bool save_csvs = 13;
-  string influxdb_token = 14;
 }
