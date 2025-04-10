@@ -20,7 +20,7 @@ WORKDIR /app/src
 
 # Copiar dependencias de Python
 COPY src/webui/requirements.in .
-RUN pip install --no-cache-dir -r requirements.in
+RUN pip install -r requirements.in
 
 # Copiar dependencias de Node.js
 COPY package*.json ./
