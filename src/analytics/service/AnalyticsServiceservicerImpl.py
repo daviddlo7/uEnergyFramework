@@ -1,6 +1,7 @@
 import logging
 from analytics_pb2 import AnalyticsResponse
 from analytics_pb2_grpc import AnalyticsServiceServicer
+from analytics_pb2 import StaticInformationResponse
 import math
 import numpy as np
 from scipy.stats import t
@@ -11,6 +12,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 from zoneinfo import ZoneInfo
 from datetime import datetime
 from google.protobuf.descriptor import FieldDescriptor
+import json
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
 
@@ -108,6 +110,23 @@ class AnalyticsServiceServicerImpl(AnalyticsServiceServicer):
 
         except Exception as e:
             logger_cli.error(f"An error occurred while processing test data: {e}")
+            return AnalyticsResponse(message="Error")
+
+    def ConsultStaticInformation(self, request, context):
+        """
+        Handles the ProcessTestData RPC call.
+
+        :param request: The incoming request containing test parameters.
+        :param context: The gRPC context.
+        :return: A response message indicating success or error.
+        """
+        try:
+            device_name = request.device_name
+            static_information = self.analytics.static_db.get_static_information(device_name)
+            return StaticInformationResponse(result_static_json=json.dumps(static_information))
+
+        except Exception as e:
+            logger_cli.error(f"An error occurred while ConsultStaticInformation: {e}")
             return AnalyticsResponse(message="Error")
 
 class Analytics:
@@ -353,7 +372,6 @@ class Analytics:
             return test_statistics
         except Exception as e:
             logger_cli.error(f"Error in test_statitstics: {e}")
-
 
     def save_in_database(self, test_statistics):
         pass
@@ -647,7 +665,6 @@ class AnalyticsStaticDB:
         static_yang = self.parse_yang_file(path)
         static_yang_device = self.parse_to_yang(device_name, static_yang, test_statistics, test_parameters)
         self.save_static_yang_influxdb(static_yang_device)
-
     
     def save_static_yang_influxdb(self, dict_yang):
         client = InfluxDBClient(url=self.url_influxdb, token=self.token, org=self.org)
@@ -704,7 +721,6 @@ class AnalyticsStaticDB:
         except Exception as e:
             logger_cli.info(f"Error: Saving static data in InfluxDB: {e}")
         client.close()
-
 
     def parse_to_yang(self, device_name, static_yang, test_statistics, test_parameters):
         #dicc = test_parameters["devices_static_power_dicc"]
@@ -1231,3 +1247,8 @@ class AnalyticsStaticDB:
                 i += 1
 
             return dict
+
+    def get_static_information(self,device_name):
+        logger_cli.info(f"TODO-inlux: Obtain static information from the device")
+        static_information = {}
+        return {'JSON': 'JSON'}
