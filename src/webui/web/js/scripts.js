@@ -53,7 +53,7 @@ document.getElementById('grpcForm').addEventListener('submit', async (event) => 
   
       if (response.ok) {
         const result = await response.json();
-        document.getElementById('response').textContent = `Respuesta del servidor: ${result.result}`;
+        document.getElementById('response').textContent = `Respuesta del servidor: ${result.message}`;
       } else {
         document.getElementById('response').textContent = `Error: ${response.statusText}`;
       }
