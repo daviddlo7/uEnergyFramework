@@ -9,7 +9,10 @@ from webui_pb2 import DESCRIPTOR as WEBUI_DESCRIPTOR
 from service.WebUIServiceservicerImpl import WebUIServicerImpl
 import energycollector_pb2
 import energycollector_pb2_grpc
+import analytics_pb2
+import analytics_pb2_grpc
 import require
+import json
 
 # Configuración del cliente gRPC para EnergyCollector
 ENERGYCOLLECTOR_SERVICE_IP = '10.152.183.12'  # IP del servicio energycollector-service
@@ -31,6 +34,7 @@ def call_energycollector(packetsize, devices, traffic_config,scenario,total_time
             stub = energycollector_pb2_grpc.EnergyCollectorStub(channel)
             logger.info(f"Enviando solicitud gRPC con parametros.")
             request = energycollector_pb2.TestParameters(devices_names=devices,traffic_configuration=traffic_config,escenario=scenario,total_time=total_time,traffic_change=traffic_change,traffic=traffic, packet_change=packet_change,packet_size=packetsize,db=database,web_interface=web_interface,debug_mode=debug_mode,save_csvs=csv)
+            logger.info(f"Enviando solicitud gRPC con parametros2.")
             response = stub.RunTest2(request)
             logger.info(f"Respuesta recibida del servidor gRPC: {response.message}")
             return response.message
@@ -42,13 +46,12 @@ def call_analytics(device):
     try:
         logger.info(f"Conectando a {ANALYTICS_SERVICE_IP}:{ANALYTICS_SERVICE_PORT}")
         with grpc.insecure_channel(f'{ANALYTICS_SERVICE_IP}:{ANALYTICS_SERVICE_PORT}') as channel:
-            stub = analytics_pb2_grpc.AnalyticsStub(channel)
+            stub = analytics_pb2_grpc.AnalyticsServiceStub(channel)
             logger.info(f"Enviando solicitud gRPC con parametros.")
-            request = analytics_pb2.TestParameters(devices_names=device)
-            response = stub.RunTest2(request)
-            logger.info(f"Respuesta recibida del servidor gRPC: {response.message}")
-            return response.message
-        return response.message
+            request = analytics_pb2.StaticInformationRequest(device_name=device)
+            response = stub.ConsultStaticInformation(request)
+        
+            return response.result_static_json
     except Exception as e:
         logger.error(f"Error al consultar influxdb: {e}")
         return {"error": str(e)}
@@ -87,10 +90,13 @@ def run_static():
         device = data.get("device","")
 
         result = call_analytics(device)
-        return jsonify({"result": result})
+        logger.info(f'resultado es: {result}')
+        json_object = json.loads(result)
+        logger.info(f'resultado en json es: {json_object}')
+        return json_object
 
     except Exception as e:
-        logger.error(f"Error en run-test: {e}")
+        logger.error(f"Error en run-static: {e}")
         return jsonify({"error": str(e)}), 500
 class WebUIService:
     """Clase para manejar el servidor gRPC."""

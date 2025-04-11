@@ -123,7 +123,8 @@ class AnalyticsServiceServicerImpl(AnalyticsServiceServicer):
         try:
             device_name = request.device_name
             static_information = self.analytics.static_db.get_static_information(device_name)
-            return StaticInformationResponse(result_static_json=json.dumps(static_information))
+            response = StaticInformationResponse(result_static_json=json.dumps(static_information))
+            return response
 
         except Exception as e:
             logger_cli.error(f"An error occurred while ConsultStaticInformation: {e}")
@@ -1248,7 +1249,62 @@ class AnalyticsStaticDB:
 
             return dict
 
-    def get_static_information(self,device_name):
+    def get_static_information(self,device):
         logger_cli.info(f"TODO-inlux: Obtain static information from the device")
-        static_information = {}
-        return {'JSON': 'JSON'}
+        static_data = {}
+        client = InfluxDBClient(url=self.url_influxdb, token=self.token, org=self.org)
+        query_api = client.query_api()
+        elements = ["power_supply", "boards", "components", "transceivers"]
+        measurements_element = ["typical-power", "nominal-power"]
+        measurements_device = ["typical-power-device", "maximum-traffic-throughput", "max-power", "efficiency",
+                               "nominal-power-device"]
+        # get static data of device
+        static_data[device] = {}
+        for measurement_device in measurements_device:
+            query = f'''
+                                        from(bucket: "static_db_pruebas")
+                                          |> range(start: 0)
+                                          |> filter(fn: (r) => r["_measurement"] == "{device}")
+                                          |> filter(fn: (r) => r["_field"] == "{measurement_device}")
+                                          |> last()
+                                          |> keep(columns: ["_value"])
+                                    '''
+            result = query_api.query(query=query)
+            if len(result) == 0:
+                static_data[device][measurement_device] = "No Data"
+            else:
+                for table in result:
+                     for record in table.records:
+                        static_data[device][measurement_device] = record.get_value()
+        for element in elements:
+            static_data[device][element] = {}
+            for measurement_element in measurements_element:
+                query = f'''
+                                from(bucket: "static_db_pruebas")
+                                  |> range(start: 0)
+                                  |> filter(fn: (r) => r["_measurement"] == "{device}")
+                                  |> filter(fn: (r) => r["_field"] == "{measurement_element}")
+                                  |> sort(columns: ["_time"], desc: true)
+                                  |> group()
+                                  |> unique(column: "name")
+                                  |> filter(fn: (r) => exists r.{element})
+                                  |> keep(columns: ["name","_value"])
+                            '''
+                result = query_api.query(query=query)
+                if len(result) == 0:
+                    for name in list(static_data[device][element].keys()):
+                        static_data[device][element][name][measurement_element] = 'No Data'
+                else:
+                    for table in result:
+                        for record in table.records:
+                            values = record.values
+                            name = values.get("name")
+                            value = values.get("_value")
+                            if name not in static_data[device][element]:
+                                static_data[device][element][name] = {}
+                            static_data[device][element][name][measurement_element] = value
+            if not static_data[device][element]:
+                static_data[device][element] = 'No Data'
+
+        client.close()
+        return static_data
