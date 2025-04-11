@@ -3,10 +3,10 @@ kubectl delete all --all -n uenergyframework
 
 # Apply the namespace configuration
 echo "Applying namespace configuration..."
-kubectl apply -f namespace.yaml
+kubectl apply -f src/namespace.yaml
 
 echo "Applying Kubernetes manifest for ingress..."
-microk8s kubectl apply -f ingress.yaml
+microk8s kubectl apply -f src/ingress.yaml
 
 # Generate gRPC files for all modules
 echo "Generating gRPC-Web files for EnergyCollector (JavaScript)..."
