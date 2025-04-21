@@ -94,7 +94,9 @@ document.addEventListener("DOMContentLoaded",  () => {
     
         if (response.ok) {
           const result = await response.json();
-          document.getElementById('response_static').textContent = `Respuesta del servidor: ${JSON.stringify(result)}`;
+          document.getElementById('response_static').textContent = ""; 
+          //document.getElementById('response_static').textContent = `Respuesta del servidor: ${JSON.stringify(result)}`;
+          mostrarTablas(result);
         } else {
           document.getElementById('response_static').textContent = `Error: ${response.statusText}`;
         }
@@ -103,5 +105,78 @@ document.addEventListener("DOMContentLoaded",  () => {
       }
     }
   });
+  function mostrarTablas(data) {
+    const contenedor = document.getElementById("response_static");
+    contenedor.innerHTML = ""; // Limpiar anteriores
+
+    const mainObj = Object.values(data)[0];
+    if (!mainObj || typeof mainObj !== "object") {
+      contenedor.textContent = "No hay datos válidos para mostrar.";
+      return;
+    }
+
+    // 🧱 Tabla de componentes
+    const tablaComponentes = document.createElement("table");
+    tablaComponentes.border = "1";
+    tablaComponentes.style.borderCollapse = "collapse";
+    tablaComponentes.style.marginBottom = "20px";
+    tablaComponentes.style.width = "100%";
+
+    const header = tablaComponentes.insertRow();
+    ["Elements", "Name", "Nominal Power", "Typical Power"].forEach(texto => {
+      const th = document.createElement("th");
+      th.textContent = texto;
+      th.style.padding = "6px";
+      th.style.backgroundColor = "#f0f0f0";
+      header.appendChild(th);
+    });
+
+    Object.entries(mainObj).forEach(([grupo, valor]) => {
+      if (typeof valor === "object" && !Array.isArray(valor)) {
+        const tienePotencias = Object.values(valor).some(v =>
+          v && typeof v === "object" && ("nominal-power" in v || "typical-power" in v)
+        );
+
+        if (tienePotencias) {
+          Object.entries(valor).forEach(([nombreElemento, datos]) => {
+            if (typeof datos === "object") {
+              const fila = tablaComponentes.insertRow();
+              fila.insertCell().textContent = grupo;
+              fila.insertCell().textContent = nombreElemento;
+              fila.insertCell().textContent = datos["nominal-power"] ?? "-";
+              fila.insertCell().textContent = datos["typical-power"] ?? "-";
+            }
+          });
+        }
+      }
+    });
+
+    contenedor.appendChild(tablaComponentes);
+
+    // Tabla de campos generales
+    const tablaGenerales = document.createElement("table");
+    tablaGenerales.border = "1";
+    tablaGenerales.style.borderCollapse = "collapse";
+    tablaGenerales.style.width = "100%";
+
+    const header2 = tablaGenerales.insertRow();
+    ["Parameters", "Value"].forEach(texto => {
+      const th = document.createElement("th");
+      th.textContent = texto;
+      th.style.padding = "6px";
+      th.style.backgroundColor = "#f0f0f0";
+      header2.appendChild(th);
+    });
+
+    Object.entries(mainObj).forEach(([clave, valor]) => {
+      if (typeof valor !== "object" || Array.isArray(valor)) {
+        const fila = tablaGenerales.insertRow();
+        fila.insertCell().textContent = clave;
+        fila.insertCell().textContent = valor;
+      }
+    });
+
+    contenedor.appendChild(tablaGenerales);
+  }
 });
-  
+
