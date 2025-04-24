@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 # Crear la aplicación Flask
 app = Flask(__name__)
+app.config['TIMEOUT'] = 86400
 
 def call_energycollector(packetsize, devices, traffic_config,scenario,total_time,traffic_change,packet_change,traffic,database,csv,debug_mode,web_interface):
     """Función que realiza la llamada gRPC al servicio EnergyCollector."""
@@ -62,22 +63,22 @@ def run_test():
     """Endpoint HTTP para manejar solicitudes desde la aplicación web."""
     try:
         data = request.get_json()
-        packetsize = data.get("packet_Size","")
-        devices = data.get("devices","")
-        traffic_config = data.get("traffic_config", "")
-        scenario = data.get("scenario","")
+        packetsize = data.get("packet_size","")
+        devices = data.get("devices_names","")
+        traffic_config = data.get("traffic_configuration", "")
+        scenario = data.get("escenario","")
         total_time = data.get("total_time","")
         traffic_change = data.get("traffic_change","")
         packet_change = data.get("packet_change","")
         traffic = data.get("traffic","")
-        database = data.get("dataBase","")
-        csv = data.get("csv", "")
+        database = data.get("db","")
+        csv = data.get("save_csvs", "")
         debug_mode = data.get("debug_mode","")
         web_interface = data.get("web_interface","")
 
         # Llamada al servicio gRPC de EnergyCollector
         result = call_energycollector(packetsize, devices, traffic_config,scenario,total_time,traffic_change,packet_change,traffic,database,csv,debug_mode,web_interface)
-        return jsonify({"result": result})
+        return jsonify({"result": result}) # Error or Test Started
 
     except Exception as e:
         logger.error(f"Error en run-test: {e}")

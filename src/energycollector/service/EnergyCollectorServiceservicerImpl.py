@@ -184,6 +184,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
             if not request.total_time:
                 return TestResponse(message="Error: Test_data not provided.")
+
             controller = EnergyControllerMain(
                 devices_names=request.devices_names,
                 traffic_configuration=request.traffic_configuration,
@@ -201,6 +202,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             )
 
             controller.run()
+            # Llama a WebUI TestStatus -> "TestStarted"
 
             logger_cli.info("Waiting for the test to complete...")
             controller.exit_event.wait()  # Esperar hasta que cleanup active el evento
