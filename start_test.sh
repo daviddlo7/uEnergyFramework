@@ -36,7 +36,7 @@ grpcurl -plaintext -d '{
 
 # WebUI grpcurl examples
 # TestStatus
-grpcurl -plaintext -d '{"test_status": "Started"}' 10.152.183.11:50051 webui.WebUi/TestStatus
+grpcurl -plaintext -d '{"test_status": "Started"}' 10.152.183.11:50051 webui.WebUI/TestStatus
 
 # Process Data
-grpcurl -plaintext -d '{"devices_data": "Huawei: 500W"}' 10.152.183.11:50051 webui.WebUi/UpdateData
+grpcurl -plaintext -d '{"devices_data": "Huawei: 500W"}' 10.152.183.11:50051 webui.WebUI/UpdateData

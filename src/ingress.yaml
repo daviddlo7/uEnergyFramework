@@ -4,7 +4,10 @@ metadata:
   name: example-ingress
   namespace: uenergyframework
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"  # Timeout para conexiones largas
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-set-header: "Upgrade $http_upgrade"  # Headers para WebSocket
+    nginx.ingress.kubernetes.io/proxy-set-header: "Connection upgrade"
 spec:
   ingressClassName: nginx
   rules:
@@ -18,6 +21,13 @@ spec:
             name: webui-nginx-service
             port:
               number: 80
+      - path: /ws/
+        pathType: Prefix
+        backend:
+          service:
+            name: webui-grpc-service
+            port:
+              number: 5000
   - host: database.uenergyframework
     http:
       paths:

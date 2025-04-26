@@ -38,6 +38,7 @@ COPY src/analytics/analytics_pb2_grpc.py /app/src/
 COPY src/webui/ .
 
 EXPOSE 50052
-EXPOSE 50053 
+EXPOSE 50051 
+EXPOSE 5000
 
 CMD ["python", "-m", "service.WebUIService"]

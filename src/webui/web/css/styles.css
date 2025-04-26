@@ -31,6 +31,16 @@ body {
     border-radius: 8px;
     box-shadow: 1px 1px 5px rgba(0,0,0,0.1);
 }
+.scroll-box {
+    height: 350px;        /* Altura fija, ajústala según lo que necesites */
+    width: 250px;         /* Ancho fijo, ajústalo según tu diseño */
+    overflow-y: auto;     /* Barra de desplazamiento vertical solo si es necesario */
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.1);
+}
 
 label {
     font-size: 12px; /* Tamaño reducido del texto */

@@ -66,7 +66,11 @@ document.getElementById('grpcForm').addEventListener('submit', async (event) => 
             const result = await response.json();
             document.getElementById('response').textContent = `Respuesta del servidor: ${result.message}`;
         } else {
-            document.getElementById('response').textContent = `Error: ${response.statusText}`;
+          if (response.status === 504) {
+              document.getElementById('response').textContent = 'Test started';
+          } else {
+              document.getElementById('response').textContent = `Error: ${response.statusText}`;
+          }
         }
     } catch (error) {
         document.getElementById('response').textContent = `Error de conexión: ${error.message}`;
@@ -111,7 +115,7 @@ document.addEventListener("DOMContentLoaded",  () => {
       return;
     }
 
-    // 🧱 Tabla de componentes
+    // Tabla de componentes
     const tablaComponentes = document.createElement("table");
     tablaComponentes.border = "1";
     tablaComponentes.style.borderCollapse = "collapse";
@@ -175,4 +179,18 @@ document.addEventListener("DOMContentLoaded",  () => {
     contenedor.appendChild(tablaGenerales);
   }
 });
+
+const socket = new WebSocket('ws://webui.uenergyframework/ws/');
+const mensajes = document.getElementById('response_test');
+
+socket.onmessage = (event) => {
+            const obj = JSON.parse(event.data);
+            const li = document.createElement('li');
+            li.textContent =  obj.data;
+            mensajes.appendChild(li);
+};
+
+socket.onerror = (error) => {
+            mensajes.textContent = 'Error en la conexión WebSocket.';
+};
 
