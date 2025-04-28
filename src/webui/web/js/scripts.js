@@ -187,6 +187,7 @@ socket.onmessage = (event) => {
             const obj = JSON.parse(event.data);
             const li = document.createElement('li');
             li.textContent =  obj.data;
+            li.style.listStyle = 'none';
             mensajes.appendChild(li);
 };
 
