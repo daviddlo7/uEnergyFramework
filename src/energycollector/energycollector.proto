@@ -25,8 +25,7 @@ message TestParameters {
   float packet_change = 7;
   repeated float packet_size = 8;
   string db = 9;
-  string db_type = 10;
-  bool web_interface = 11;
-  bool debug_mode = 12;
-  bool save_csvs = 13;
+  bool web_interface = 10;
+  bool debug_mode = 11;
+  bool save_csvs = 12;
 }

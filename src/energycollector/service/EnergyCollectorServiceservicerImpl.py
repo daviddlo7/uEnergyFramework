@@ -27,7 +27,8 @@ from analytics_pb2 import TestParameters
 from analytics_pb2 import ConfigDataDevice
 from analytics_pb2 import StaticPowerDevice
 from analytics_pb2 import StaticPowerComponent
-
+from influxdb_client import InfluxDBClient, Point, WritePrecision
+from influxdb_client.client.write_api import SYNCHRONOUS
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
@@ -139,10 +140,10 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
             traffic_configuration = "default"
             escenario = "default"
-            total_time = 0.1
-            traffic_change = None
+            total_time = 1
+            traffic_change = 0
             traffic = 0
-            packet_change = None
+            packet_change = 0
             packet_size = 0
             db = "pruebas"
             web_interface = False
@@ -183,6 +184,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
             if not request.total_time:
                 return TestResponse(message="Error: Test_data not provided.")
+
             controller = EnergyControllerMain(
                 devices_names=request.devices_names,
                 traffic_configuration=request.traffic_configuration,
@@ -200,6 +202,7 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             )
 
             controller.run()
+            # Llama a WebUI TestStatus -> "TestStarted"
 
             logger_cli.info("Waiting for the test to complete...")
             controller.exit_event.wait()  # Esperar hasta que cleanup active el evento
@@ -222,6 +225,8 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
             return response.message
         except Exception as e:
             default_logger.error(f"Failed to call CheckConnection on Analytics service: {e}")
+            return "Error calling CheckConnection"
+
             return "Error calling CheckConnection"
 
     def analytics_process_test_data(self, device_name, test_parameters):
@@ -293,12 +298,12 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
                 escenario=test_parameters.escenario,
                 interval=test_parameters.interval,
                 max_interval=test_parameters.max_interval,
-                traffic_change=test_parameters.traffic_change or 0.0,
-                traffic=test_parameters.traffic or 0.0,
-                actual_traffic=test_parameters.actual_traffic or 0.0,
-                packet_change=test_parameters.packet_change or 0.0,
-                packet_size=test_parameters.packet_size or 0,
-                actual_packet_size=test_parameters.actual_packet_size or 0,
+                traffic_change=test_parameters.traffic_change,
+                traffic=test_parameters.traffic,
+                actual_traffic=test_parameters.actual_traffic,
+                packet_change=test_parameters.packet_change,
+                packet_size=test_parameters.packet_size,
+                actual_packet_size=test_parameters.actual_packet_size,
                 initial_time=float(test_parameters.initial_time),
                 initial_datetime=str(test_parameters.initial_datetime),
                 start_date=test_parameters.start_date,
@@ -319,17 +324,19 @@ class EnergyCollectorServicerImpl(EnergyCollectorServicer):
 
             # Call the remote method
             logger_cli.info("Sending request:")
-            logger_cli.info(MessageToDict(request))
+            logger_cli.info(MessageToDict(request, including_default_value_fields=True))
 
             response = stub.ProcessTestData(request)
 
             logger_cli.info(f"Response from Analytics service: {response.message}")
 
             # Close the channel
+
+            logger_cli.info(f"Response from Analytics service: {response.message}")
+
+            # Close the channel
             channel.close()
-
             return response.message
-
         except Exception as e:
             logger_cli.error(f"Error calling ProcessTestData on Analytics service: {e}")
             return "Error calling ProcessTestData"
@@ -509,7 +516,7 @@ class EnergyControllerMain:
         logger_cli.info(f'Traffic Packet Size (Bytes): {traffic_packet_size}')
         logger_cli.info(f'Power (W): {power}')
 
-        result = self.time_series_db.save_influxdb_instantaneous_data("device_name", "instantaneous_data_devices[device_name]","test_data_devices[device_name]")
+        result = self.time_series_db.save_influxdb_instantaneous_data(device_name, instantaneous_data_devices[device_name],test_data_devices[device_name])
 
     def event_func(self, interval, max_executions):
         if self.stop_event.is_set():
@@ -925,7 +932,7 @@ class Reader:
         actual_time = float("{:.1f}".format(time.time() - test_parameters.initial_time))
         throughput = 0
         packet_size = 0
-        if test_parameters.traffic_change is not None:
+        if test_parameters.traffic_change != 0:
             if actual_time < (test_parameters.traffic_change * (test_parameters.actual_traffic + 1)):
                 throughput = test_parameters.traffic[test_parameters.actual_traffic]
             else:
@@ -935,7 +942,7 @@ class Reader:
         else:
             throughput = test_parameters.traffic
 
-        if test_parameters.packet_change is not None:
+        if test_parameters.packet_change != 0:
             if actual_time < (test_parameters.packet_change * (test_parameters.actual_packet_size + 1)):
                 packet_size = test_parameters.packet_size[test_parameters.actual_packet_size]
             else:
@@ -2427,11 +2434,117 @@ class Reader:
 
 class EnergyCollectorTimeSeriesDB:
     def __init__(self):
-        pass
+        self.url_influxdb = "http://10.152.183.14:8086"
+        self.token = "my_admin_token"
+        self.org = "uEnergyOrg"
+        self.bucket = "time_series_db_pruebas"
     
     def save_influxdb_instantaneous_data(self, device_name, instantaneous_data, test_data):
-        logger_cli.info("TODO-influxdb: Save instantaneous data in influxDB via API")
+        logger_cli.info("Inserting instantaneous data in InfluxDB")
+        client = InfluxDBClient(url=self.url_influxdb, token=self.token, org=self.org)
+        self.insert_data_influxdb(client, device_name, instantaneous_data, test_data)
+        client.close()
         return 0
+    
+    def insert_data_influxdb(self, client, device, instantaneous_data, test_dict):
+        utc_now = datetime.now(ZoneInfo('UTC'))
+        current_time = utc_now.astimezone(ZoneInfo('Europe/Berlin'))
+
+        points = [Point(device)
+                  .field("name", instantaneous_data['device-power-information']["name"])
+                  .field("power_device", instantaneous_data['device-power-information']["power"])
+                  .field("energy_mode", instantaneous_data['device-power-information']["energy-mode"])
+                  .field("energy_efficiency", instantaneous_data['device-power-information']["energy-efficiency"])
+                  .time(current_time, WritePrecision.NS),
+                  Point(device)
+                  .tag("Inst Info", "configuration")
+                  .field("boards", instantaneous_data['device-power-information']['configuration']['boards'])
+                  .field("transceivers",
+                         instantaneous_data['device-power-information']['configuration']['transceivers'])
+                  .time(current_time, WritePrecision.NS),
+                  Point(device)
+                  .tag("Inst Info", "perfomance-metrics")
+                  .field("ambient_temperature",
+                         instantaneous_data['device-power-information']['performance-metrics']['ambient-temperature'])
+                  .field("cpu-load", instantaneous_data['device-power-information']['performance-metrics']['cpu-load'])
+                  .field("traffic_type",
+                         instantaneous_data['device-power-information']['performance-metrics']['traffic-type'])
+                  .field("fan_speed",
+                         instantaneous_data['device-power-information']['performance-metrics']['fan-speed'])
+                  .field("traffic_throughput",
+                         instantaneous_data['device-power-information']['performance-metrics']['traffic-throughput'])
+                  .field("traffic_packet_size",
+                         instantaneous_data['device-power-information']['performance-metrics']['traffic-packet-size'])
+                  .time(current_time, WritePrecision.NS),
+                  Point(device)
+                  .tag("Inst Info", "Test")
+                  .field("DateTime", test_dict["Test"]["DateTime"].astimezone(
+                      ZoneInfo('Europe/Berlin')).isoformat())
+                  .field("Times", float(test_dict["Test"]["Times"]))
+                  .field("TestConfiguration", test_dict["Test"]["TestConfiguration"])
+                  .field("DeviceConfiguration", test_dict["Test"]["DeviceConfiguration"])
+                  .field("Scenario", test_dict["Test"]["Scenario"])
+                  .field("StartTime", test_dict["Test"]["StartTime"])
+                  .field("StartDate", test_dict["Test"]["StartDate"])
+                  .time(current_time, WritePrecision.NS)]
+
+        for data in instantaneous_data['device-power-information']["boards"]:
+            points.append(
+                Point(device)
+                .tag("Inst Info", "boards")
+                .tag("board", data["name"])
+                .field("name", data["name"])
+                .field("type", data["type"])
+                .field("power", data["power"])
+                .time(current_time, WritePrecision.NS)
+            )
+        for data in instantaneous_data['device-power-information']["components"]:
+            points.append(
+                Point(device)
+                .tag("Inst Info", "components")
+                .tag("component", data["name"])
+                .field("name", data["name"])
+                .field("type", data["type"])
+                .field("power", data["power"])
+                .time(current_time, WritePrecision.NS)
+            )
+        for data in instantaneous_data['device-power-information']["transceivers"]:
+            points.append(
+                Point(device)
+                .tag("Inst Info", "transceivers")
+                .tag("transceiver", data["name"])
+                .field("name", data["name"])
+                .field("type", data["type"])
+                .field("power", data["power"])
+                .time(current_time, WritePrecision.NS)
+            )
+
+        for data in instantaneous_data['device-power-information']["power-supply"]:
+            points.append(
+                Point(device)
+                .tag("Inst Info", "power-supplies")
+                .tag("power_supply", data["name"])
+                .field("name", data["name"])
+                .field("rated_power", data["rated-power"])
+                .field("input_current", data["input-current"])
+                .field("input_voltage", data["input-voltage"])
+                .field("input_power", data["input-power"])
+                .field("output_current", data["output-current"])
+                .field("output_voltage", data["output-voltage"])
+                .field("output_power", data["output-power"])
+                .field("efficiency", data["efficiency"])
+                .time(current_time, WritePrecision.NS)
+            )
+
+        write_api = client.write_api(write_options=SYNCHRONOUS)
+        try:
+            write_api.write(bucket=self.bucket, org=self.org, record=points)
+            logger_cli.info("Insert instantaneous data in InfluxDB: Successfull")
+        except Exception as e:
+            logger_cli.info(f"Error: Inserting instantaneous data in InfluxDB: {e}")
+
+
+
     
     def save_csv(self, test_parameters, device_name):
         logger_cli.info("TODO-CSVs: Save instantaneous data in influxDB via API")

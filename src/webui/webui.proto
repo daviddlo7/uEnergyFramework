@@ -5,10 +5,15 @@ package webui;
 service WebUI {
   rpc UpdateData (UpdateDataRequest) returns (UpdateDataResponse);
   rpc ShowGUI (UpdateDataRequest) returns (UpdateDataResponse);
+  rpc TestStatus (TestStatusRequest) returns (UpdateDataResponse);
 }
 
 message UpdateDataRequest {
-  string data = 1;
+  string devices_data = 1;
+}
+
+message TestStatusRequest {
+  string test_status = 1;
 }
 
 message UpdateDataResponse {

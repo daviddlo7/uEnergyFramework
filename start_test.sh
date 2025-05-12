@@ -33,3 +33,10 @@ grpcurl -plaintext -d '{
   "debug_mode": false,
   "save_csvs": false
 }' 10.152.183.12:50051 energycollector.EnergyCollector/RunTest2
+
+# WebUI grpcurl examples
+# TestStatus
+grpcurl -plaintext -d '{"test_status": "Started"}' 10.152.183.11:50051 webui.WebUI/TestStatus
+
+# Process Data
+grpcurl -plaintext -d '{"devices_data": "Huawei: 500W"}' 10.152.183.11:50051 webui.WebUI/UpdateData

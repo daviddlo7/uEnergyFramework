@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: grafana-datasource
+  name: configmap-uenergyframework
   namespace: uenergyframework
 data:
   datasource.yaml: |
@@ -22,3 +22,14 @@ data:
         secureJsonData:
           token: my_admin_token
         uid: DS_INFLUXDB
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards

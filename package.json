@@ -1,0 +1,25 @@
+{
+  "name": "uenergyframework",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daviddlo7/uEnergyFramework.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/daviddlo7/uEnergyFramework/issues"
+  },
+  "homepage": "https://github.com/daviddlo7/uEnergyFramework#readme",
+  "description": "",
+  "dependencies": {
+    "@grpc/grpc-js": "^1.13.2",
+    "@grpc/proto-loader": "^0.7.13",
+    "express": "^5.1.0"
+  }
+}

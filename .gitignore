@@ -12,3 +12,5 @@ webui_pb2.py
 influxdb-data/*
 !influxdb-data/.gitkeep
 node_modules
+package-lock.json
+package.json

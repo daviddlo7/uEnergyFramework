@@ -20,8 +20,6 @@ spec:
           operator: In
           values:
           - energy
-
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -35,7 +33,6 @@ spec:
     requests:
       storage: 1Gi
   storageClassName: local-storage
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -76,11 +73,32 @@ spec:
         volumeMounts:
         - mountPath: /var/lib/influxdb2
           name: influxdb-storage
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - |
+                echo "Esperando a que InfluxDB esté disponible..."
+                until curl -s http://localhost:8086/health | grep -q '"status":"pass"'; do
+                  echo "InfluxDB aún no está listo. Reintentando en 2 segundos..."
+                  sleep 2
+                done
+
+                echo "InfluxDB está listo. Creando los buckets..."
+                influx bucket create -n time_series_db_pruebas -o $DOCKER_INFLUXDB_INIT_ORG --retention 0 -t $DOCKER_INFLUXDB_INIT_ADMIN_TOKEN || true
+                influx bucket create -n time_series_db_final -o $DOCKER_INFLUXDB_INIT_ORG --retention 0 -t $DOCKER_INFLUXDB_INIT_ADMIN_TOKEN || true
+                influx bucket create -n telemetry_db_pruebas -o $DOCKER_INFLUXDB_INIT_ORG --retention 0 -t $DOCKER_INFLUXDB_INIT_ADMIN_TOKEN || true
+                influx bucket create -n telemetry_db_final -o $DOCKER_INFLUXDB_INIT_ORG --retention 0 -t $DOCKER_INFLUXDB_INIT_ADMIN_TOKEN || true
+                influx bucket create -n static_db_pruebas -o $DOCKER_INFLUXDB_INIT_ORG --retention 0 -t $DOCKER_INFLUXDB_INIT_ADMIN_TOKEN || true
+                influx bucket create -n static_db_final -o $DOCKER_INFLUXDB_INIT_ORG --retention 0 -t $DOCKER_INFLUXDB_INIT_ADMIN_TOKEN || true
+
+                echo "Buckets creados exitosamente."
       volumes:
       - name: influxdb-storage
         persistentVolumeClaim:
           claimName: influxdb-pvc
-
 ---
 apiVersion: v1
 kind: Service
@@ -89,10 +107,10 @@ metadata:
   namespace: uenergyframework
 spec:
   type: ClusterIP
-  clusterIP: 10.152.183.14
+  clusterIP: 10.152.183.14 # Cambiar si es necesario o dejarlo como asignado automáticamente.
   selector:
     app: database
   ports:
-  - port: 8086
-    targetPort: 8086
+  - port: 8086 # Puerto expuesto por el servicio.
+    targetPort: 8086 # Puerto del contenedor.
     protocol: TCP
