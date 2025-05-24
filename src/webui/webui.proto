@@ -6,6 +6,7 @@ service WebUI {
   rpc UpdateData (UpdateDataRequest) returns (UpdateDataResponse);
   rpc ShowGUI (UpdateDataRequest) returns (UpdateDataResponse);
   rpc TestStatus (TestStatusRequest) returns (UpdateDataResponse);
+  rpc TestLog(TestLogRequest) returns (UpdateDataResponse) {}
 }
 
 message UpdateDataRequest {
@@ -18,4 +19,8 @@ message TestStatusRequest {
 
 message UpdateDataResponse {
   string message = 1; 
+}
+
+message TestLogRequest {
+  string log_message = 1;
 }

@@ -106,6 +106,7 @@ class AnalyticsServiceServicerImpl(AnalyticsServiceServicer):
             self.analytics.process_test_data_influxdb(device_name, test_parameters)
 
             # Return success response
+            logger_cli.info("Analytics completed")
             return AnalyticsResponse(message="OK")
 
         except Exception as e:
@@ -593,7 +594,7 @@ class AnalyticsTelemetryDB:
 
         points = []
         for key in test_statistics.keys():
-            if key == "Name" or key == "Configuration" or key == "Traffic Test" or key == "Start Date" or key == "Start Time":
+            if key in ["Name", "Configuration", "Traffic Test", "Start Date", "Start Time"]:
                 points.append(
                     Point(test_statistics["Name"])
                     .field(key, test_statistics[key])
@@ -602,13 +603,27 @@ class AnalyticsTelemetryDB:
             else:
                 dicc = test_statistics[key]
                 for tag in dicc.keys():
-                    if tag == "StartTime" or tag == "EndTime" or tag == "Time Interval" or tag == "Traffic" or tag == "PacketSize":
+                    if tag in ["StartTime", "EndTime", "Time Interval"]:
                         points.append(
                             Point(test_statistics["Name"])
                             .tag("Intervals", key)
                             .field(tag, dicc[tag])
                             .time(current_time, WritePrecision.NS)
                         )
+                    elif tag in ["Traffic", "PacketSize"]:
+                        values = dicc[tag]
+                        try:
+                            values = list(values)
+                        except TypeError:
+                            values = [values]
+                        for idx, val in enumerate(values):
+                            points.append(
+                                Point(test_statistics["Name"])
+                                .tag("Intervals", key)
+                                .tag("Index", str(idx))
+                                .field(tag, val)
+                                .time(current_time, WritePrecision.NS)
+                            )
                     else:
                         if tag == "Device":
                             detail = dicc[tag]

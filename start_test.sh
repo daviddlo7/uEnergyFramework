@@ -14,15 +14,21 @@ kubectl logs -f -n uenergyframework $(kubectl get pods -n uenergyframework --no-
 #Sin INFO o ERROR
 kubectl logs -f -n uenergyframework $(kubectl get pods -n uenergyframework --no-headers | grep analytics-deployment | awk '{print $1}') | awk '{sub(/^(INFO|ERROR):[^:]+:/,""); print}'
 
+#Con INFO o ERROR
+kubectl logs -f -n uenergyframework $(kubectl get pods -n uenergyframework --no-headers | grep webui-deployment | awk '{print $1}')
+
+#Sin INFO o ERROR
+kubectl logs -f -n uenergyframework $(kubectl get pods -n uenergyframework --no-headers | grep webui-deployment | awk '{print $1}') | awk '{sub(/^(INFO|ERROR):[^:]+:/,""); print}'
+
 # Terminal 3 -> Run Test gRPC EnergyCollector
 
 grpcurl -plaintext -d '{"test_data": "{test_data}"}' 10.152.183.12:50051 energycollector.EnergyCollector/RunTest
 
 # Run test 2 with TestParameters
 grpcurl -plaintext -d '{
-  "devices_names": ["HL4_5_1_Huawei"],
+  "devices_names": ["HL5_1_2_Adva"],
   "traffic_configuration": "IDLE",
-  "escenario": "huawei",
+  "escenario": "adva",
   "total_time": 1,
   "traffic_change": 0,
   "traffic": 0,
@@ -31,7 +37,8 @@ grpcurl -plaintext -d '{
   "db": "pruebas",
   "web_interface": false,
   "debug_mode": false,
-  "save_csvs": false
+  "save_csvs": false,
+  "log_mode": false
 }' 10.152.183.12:50051 energycollector.EnergyCollector/RunTest2
 
 # WebUI grpcurl examples

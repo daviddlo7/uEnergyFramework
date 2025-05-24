@@ -35,10 +35,10 @@ spec:
           type: Directory
       - name: dashboards-provisioning
         configMap:
-          name: grafana-dashboard-files
+          name: configmap-uenergyframework
       - name: datasource-config
         configMap:
-          name: grafana-datasource
+          name: configmap-uenergyframework
 ---
 apiVersion: v1
 kind: Service

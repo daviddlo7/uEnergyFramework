@@ -15,3 +15,7 @@ microk8s stop
 microk8s start
 
 sudo microk8s reset
+
+for pv in $(kubectl get pv --no-headers | awk '$5=="Released"{print $1}'); do
+  kubectl patch pv "$pv" --type=json -p '[{"op": "remove", "path": "/spec/claimRef"}]'
+done

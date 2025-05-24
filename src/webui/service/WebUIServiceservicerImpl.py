@@ -70,6 +70,22 @@ class WebUIServicerImpl(WebUIServicer):
         except Exception as e:
             LOGGER.error(f"An error occurred while updating data: {e}")
             return UpdateDataResponse(message="Error")
+    async def TestLog(self, request, context):
+        """
+        Handles the TestLog gRPC request.
+        """
+        try:
+            log_message = request.log_message
+            LOGGER.info(f"[GRPC LOG] {log_message}")
+
+            # Enviar por WebSocket
+            await send_message(json.dumps({"type": "log", "data": log_message}))
+
+            return UpdateDataResponse(message="Log received")
+
+        except Exception as e:
+            LOGGER.error(f"An error occurred while processing TestLog: {e}")
+            return UpdateDataResponse(message="Error")
     def process_data(self, data):
         """
         Example method to process the received data.

@@ -29,14 +29,28 @@ logger = logging.getLogger(__name__)
 # Crear la aplicación Flask
 app = Flask(__name__)
 
-async def call_energycollector(packetsize, devices, traffic_config,scenario,total_time,traffic_change,packet_change,traffic,database,csv,debug_mode,web_interface):
+async def call_energycollector(packetsize, devices, traffic_config,scenario,total_time,traffic_change,packet_change,traffic,database,csv,debug_mode,web_interface, log_mode):
     """Función que realiza la llamada gRPC al servicio EnergyCollector."""
     try:
         logger.info(f"Conectando a {ENERGYCOLLECTOR_SERVICE_IP}:{ENERGYCOLLECTOR_SERVICE_PORT}")
         async with grpc.aio.insecure_channel(f'{ENERGYCOLLECTOR_SERVICE_IP}:{ENERGYCOLLECTOR_SERVICE_PORT}') as channel:
             stub = energycollector_pb2_grpc.EnergyCollectorStub(channel)
             logger.info(f"Enviando solicitud gRPC con parametros.")
-            request = energycollector_pb2.TestParameters(devices_names=devices,traffic_configuration=traffic_config,escenario=scenario,total_time=total_time,traffic_change=traffic_change,traffic=traffic, packet_change=packet_change,packet_size=packetsize,db=database,web_interface=web_interface,debug_mode=debug_mode,save_csvs=csv)
+            request = energycollector_pb2.TestParameters(
+                devices_names=devices,
+                traffic_configuration=traffic_config,
+                escenario=scenario,
+                total_time=total_time,
+                traffic_change=traffic_change,
+                traffic=traffic,
+                packet_change=packet_change,
+                packet_size=packetsize,
+                db=database,
+                web_interface=web_interface,
+                debug_mode=debug_mode,
+                save_csvs=csv,
+                log_mode=log_mode
+            )
             logger.info(f"Enviando solicitud gRPC con parametros2.")
             response = await stub.RunTest2(request)
             logger.info(f"Respuesta recibida del servidor gRPC: {response.message}")
@@ -74,13 +88,18 @@ def run_test():
         packet_change = data.get("packet_change","")
         traffic = data.get("traffic","")
         database = data.get("db","")
-        csv = data.get("save_csvs", "")
-        debug_mode = data.get("debug_mode","")
-        web_interface = data.get("web_interface","")
+        csv = data.get("save_csvs", False)
+        debug_mode = data.get("debug_mode",False)
+        web_interface = data.get("web_interface",False)
+        log_mode = data.get("log_mode", "")
 
         # Llamada al servicio gRPC de EnergyCollector
         loop = asyncio.new_event_loop()
-        result = loop.run_until_complete(call_energycollector(packetsize, devices, traffic_config,scenario,total_time,traffic_change,packet_change,traffic,database,csv,debug_mode,web_interface))
+        result = loop.run_until_complete(call_energycollector(
+                packetsize, devices, traffic_config, scenario, total_time,
+                traffic_change, packet_change, traffic, database, csv,
+                debug_mode, web_interface, log_mode
+            ))
         loop.close()
         return jsonify({"result": result}) # Error or Test Started
 

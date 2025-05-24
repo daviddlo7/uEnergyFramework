@@ -28,4 +28,5 @@ message TestParameters {
   bool web_interface = 10;
   bool debug_mode = 11;
   bool save_csvs = 12;
+  bool log_mode = 13;
 }

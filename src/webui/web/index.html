@@ -1,171 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WebUI</title>
-  <link rel="stylesheet" href="./css/styles.css">
+  <link rel="stylesheet" href="./css/styles.css" />
 </head>
 <body>
-    <div class="container">
-      <!-- Left Top Section -->
-      <div class="left-top-frame">
-          <!-- Devices Section -->
-          <div class="form-group">
-              <label for="devices">Devices:</label>
-              <select id="devices" multiple>
-                <option selected>HL5_1_2_Adva</option>
-                <option selected>HL4_5_1_Huawei</option>
-                <option selected>HL_Ufispace</option>
-                <option selected>HL_Juniper</option>
-                <option selected>HL_Cisco</option>
-              </select>
-          </div>
-
-          <!-- Traffic Configuration Section -->
-          <div class="form-group">
-              <label for="traffic-config">Traffic Configuration:</label>
-              <input list="traffic-config-options" id="traffic-config" value="default">
-              <datalist id="traffic-config-options">
-                  <option>IDLE</option>
-                  <option>0%a100%(step10%-300seg)(noFW)</option>
-                  <option>100%a0%(step10%-300seg)(noFW)</option>
-                  <option>0%a100%a0%(step10%-300seg)(noFW)</option>
-                  <option>0%a100%(step10%-300seg)(FW)</option>
-                  <option>100%a0%(step10%-300seg)(FW)</option>
-                  <option>0%a100%a0%(step10%-300seg)(FW)</option>
-                  <option>0%a100%(step10%-300seg)(descarte)</option>
-                  <option>100%a0%(step10%-300seg)(descarte)</option>
-                  <option>0%a100%a0%(step10%-300seg)(descarte)</option>
-              </datalist>
-          </div>
-
-          <!-- Scenario Section -->
-          <div class="form-group">
-              <label for="scenario">Scenario:</label>
-              <input list="scenario-options" id="scenario" value="default">
-              <datalist id="scenario-options">
-                  <option>idle</option>
-                  <option>escenario1_1</option>
-                  <option>escenario1_2</option>
-                  <option>escenario2_1</option>
-                  <option>escenario2_2</option>
-                  <option>escenario3</option>
-                  <option>escenario4_1</option>
-                  <option>escenario4_2</option>
-                  <option>escenario4_3</option>
-                  <option>escenario5_1</option>
-                  <option>escenario5_2</option>
-                  <option>escenario6</option>
-                  <option>escenario7</option>
-              </datalist>
-          </div>
-
-          <!-- Total Time Section -->
-          <div class="form-group">
-              <label for="total-time">Total Time (mins.):</label>
-              <input type="text" id="total-time" placeholder="Total Time">
-          </div>
-
-          <!-- Traffic Change Section -->
-          <div class="form-group">
-              <label for="traffic-change">Traffic Change:</label>
-              <input type="text" id="traffic-change" value="0">
-          </div>
-
-          <!-- Traffic Section -->
-          <div class="form-group">
-              <label for="traffic">Traffic:</label>
-              <input list="traffic-options" id="traffic" value="0">
-              <datalist id="traffic-options">
-                  <option>0</option>
-                  <option>[0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200]</option>
-                  <option>[200, 180, 160, 140, 120, 100, 80, 60, 40, 20, 0]</option>
-                  <option>[0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 180, 160, 140, 120, 100, 80, 60, 40, 20, 0]</option>
-              </datalist>
-          </div>
-
-          <!-- Package Change Section -->
-          <div class="form-group">
-              <label for="package-change">Package Change:</label>
-              <input type="text" id="package-change" value="0">
-          </div>
-
-          <!-- Packet Size Section -->
-          <div class="form-group">
-              <label for="packet-size">Packet Size:</label>
-              <input list="packet-size-options" id="packet-size" value="0">
-              <datalist id="packet-size-options">
-                  <option>0</option>
-                  <option>[64, 128, 256, 512, 1028]</option>
-              </datalist>
-          </div>
+  <div class="grid-container">
+    <!-- Top Left: Test Parameters -->
+    <div class="grid-item top-left">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="devices">Devices:</label>
+          <select id="devices" multiple>
+            <option>HL5_1_2_Adva</option>
+            <option>HL4_5_1_Huawei</option>
+            <option>HL_Ufispace</option>
+            <option>HL_Juniper</option>
+            <option>HL_Cisco</option>
+          </select>
+        </div>
       </div>
 
-      <!-- Bottom Section -->
-      <div class="bottom-frame">
-          <!-- Database Section -->
-          <div class="form-group">
-              <label for="database">Database:</label>
-              <input list="database-options" id="database" value="pruebas">
-              <datalist id="database-options">
-                  <option>pruebas</option>
-                  <option>final</option>
-              </datalist>
-          </div>
-
-
-          <!-- Debug Mode Section -->
-          <div class="form-group">
-              <label for="debug-mode">Debug Mode:</label>
-              <input type="checkbox" id="debug-mode">
-          </div>
-
-          <!-- Web Interface Section -->
-          <div class="form-group">
-              <label for="web-interface">Web Interface:</label>
-              <input type="checkbox" id="web-interface">
-          </div>
-
-          <!-- Web Interface Section -->
-          <div class="form-group">
-            <label for="csv">Save csv:</label>
-            <input type="checkbox" id="csv">
-          </div>
-
-          <!-- Run Test Button -->
-          <div class="form-group">
-            <form id="grpcForm">
-              <button id="myButton" type="submit">Run Test</button>
-            </form>   
-          </div>
-
-          <!-- Stop Test Button -->
-          <div class="form-group">
-              <form id="grpcForm">
-                <button type="submit">Stop Test</button>
-              </form>
-          </div>
+      <!-- Row: Traffic Config + Scenario -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="traffic-config">Traffic Config:</label>
+          <input list="traffic-config-options" id="traffic-config">
+          <datalist id="traffic-config-options">
+            <option value="IDLE">
+            <option value="0%a100%(step10%-300seg)(noFW)">
+            <option value="100%a0%(step10%-300seg)(noFW)">
+            <option value="0%a100%a0%(step10%-300seg)(noFW)">
+            <option value="0%a100%(step10%-300seg)(FW)">
+            <option value="100%a0%(step10%-300seg)(FW)">
+            <option value="0%a100%a0%(step10%-300seg)(FW)">
+            <option value="0%a100%(step10%-300seg)(descarte)">
+            <option value="100%a0%(step10%-300seg)(descarte)">
+            <option value="0%a100%a0%(step10%-300seg)(descarte)">
+            <option value="telemetry">
+          </datalist>
         </div>
+        <div class="form-group">
+          <label for="scenario">Scenario:</label>
+          <input list="scenario-options" id="scenario">
+          <datalist id="scenario-options">
+            <option value="idle">
+            <option value="escenario1_1">
+            <option value="escenario1_2">
+            <option value="escenario2_1">
+            <option value="escenario2_2">
+            <option value="escenario3">
+            <option value="escenario4_1">
+            <option value="escenario4_2">
+            <option value="escenario4_3">
+            <option value="escenario5_1">
+            <option value="escenario5_2">
+            <option value="escenario6">
+            <option value="escenario7">
+            <option value="telemetry">
+          </datalist>
+        </div>
+      </div>
 
-        <div class="right-panel">
-            <div class="form-group">
-              <label for="devices2">Devices for static data:</label>
-              <input list="devices-options" id="devices2">
-              <datalist id="devices-options">
-                <option>HL5_1_2_Adva</option>
-                <option>HL4_5_1_Huawei</option>
-                <option>HL_Ufispace</option>
-                <option>HL_Juniper</option>
-                <option>HL_Cisco</option>
-              </datalist>
-              <p id="response_static"></p>
+      <!-- Row: Traffic Δ + Traffic -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="traffic-change">Traffic Change:</label>
+          <input type="text" id="traffic-change">
+        </div>
+        <div class="form-group">
+          <label for="traffic">Traffic:</label>
+          <input list="traffic-options" id="traffic">
+          <datalist id="traffic-options">
+            <option value="0">
+            <option value="[0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200]">
+            <option value="[200, 180, 160, 140, 120, 100, 80, 60, 40, 20, 0]">
+            <option value="[0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 180, 160, 140, 120, 100, 80, 60, 40, 20, 0]">
+            <option value="telemetry">
+          </datalist>
+        </div>
+      </div>
+
+      <!-- Row: Pkt Δ + Pkt Size -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="package-change">Pkt Change:</label>
+          <input type="text" id="package-change">
+        </div>
+        <div class="form-group">
+          <label for="packet-size">Pkt Size:</label>
+          <input list="packet-size-options" id="packet-size">
+          <datalist id="packet-size-options">
+            <option value="0">
+            <option value="[64, 128, 256, 512, 1028]">
+            <option value="telemetry">
+          </datalist>
+        </div>
+      </div>
+
+      <!-- Row: DB + DB Type -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="database">Database:</label>
+          <input list="database-options" id="database">
+          <datalist id="database-options">
+            <option value="pruebas">
+            <option value="final">
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label for="databasetype">DB Type:</label>
+          <input list="databasetype-options" id="databasetype">
+          <datalist id="databasetype-options">
+            <option value="influxdb">
+            <option value="sql">
+          </datalist>
+        </div>
+      </div>
+
+      <!-- Toggles -->
+      <div class="form-row">
+        <div class="form-group"><label><input type="checkbox" id="debug-mode"> Debug Mode</label></div>
+        <div class="form-group"><label><input type="checkbox" id="log-mode"> Log Mode</label></div>
+        <div class="form-group"><label><input type="checkbox" id="web-interface"> Web UI</label></div>
+        <div class="form-group"><label><input type="checkbox" id="csv"> Save CSV</label></div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="form-row">
+        <form id="startTestForm" class="form-group">
+          <button id="myButton" type="submit">Run Test</button>
+        </form>
+        <form id="stopTestForm" class="form-group">
+          <button type="submit">Stop Test</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Top Right: Empty -->
+    <div class="grid-item top-right"></div>
+
+    <!-- Bottom Left: WebSocket -->
+    <div class="grid-item bottom-left">
+      <ul id="response_test" class="scroll-box"></ul>
+    </div>
+
+    <!-- Bottom Right: Static data -->
+    <div class="grid-item bottom-right">
+        <div class="form-group">
+            <label for="devices2">Device:</label>
+            <select id="devices2">
+            <option value="">-- Select a device --</option>
+            <option>HL5_1_2_Adva</option>
+            <option>HL4_5_1_Huawei</option>
+            <option>HL_Ufispace</option>
+            <option>HL_Juniper</option>
+            <option>HL_Cisco</option>
+            </select>
+
+            <div class="table-container">
+            <table id="general-table">
+                <thead>
+                <tr><th>Name</th><th>Value</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <table id="components-table">
+                <thead>
+                <tr><th>Component</th><th>Typical Power</th><th>Nominal Power</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
             </div>
         </div>
-        <div class="text-panel">
-            <p id="response_test" class="scroll-box"></p>
         </div>
-    </div>
+  </div>
+
   <p id="response"></p>
   <script src="./js/scripts.js"></script>
 </body>
