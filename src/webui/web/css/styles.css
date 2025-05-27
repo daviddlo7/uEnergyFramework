@@ -111,3 +111,118 @@ table th {
   background-color: #f0f0f0;
   font-weight: bold;
 }
+
+.section-title {
+  margin: 0 0 10px 0;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 5px;
+}
+
+.grid-item.top-right .form-group {
+  margin-top: 10px;
+}
+
+.grid-item.top-right label {
+  font-weight: 500;
+  margin-right: 5px;
+}
+
+#topology-mode {
+  padding: 4px 8px;
+  font-size: 0.95rem;
+}
+
+.topology-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.topology-box {
+  height: 500px;
+  display: flex;
+  background: #fefefe;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-top: 10px;
+}
+
+/* Zona de renderizado de topología */
+.topology-view {
+  flex: 3;
+  padding: 10px;
+}
+
+/* Panel lateral derecho */
+.topology-panel {
+  flex: 1;
+  border-left: 1px solid #ccc;
+  padding: 20px;
+  display: none; /* visible según el modo seleccionado */
+  justify-content: center;
+  align-items: center;
+}
+
+#topology-box {
+  display: none;
+  height: 500px;
+  display: flex;
+  flex-direction: row;
+  background: #fefefe;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+#topology {
+  flex: 3;
+  flex-basis: 75%;
+  min-width: 0;
+  padding: 10px;
+  overflow: hidden;
+}
+
+#mode-panel {
+  flex: 1;
+  flex-basis: 25%;
+  min-width: 0;
+  padding: 20px;
+  border-left: 1px solid #ccc;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;
+}
+
+#topology svg {
+  max-height: 100%;
+  width: 100%;
+}
+
+#topology {
+  display: flex;
+  flex-direction: column;
+}
+
+#topology-graph {
+  flex: 4;
+  padding: 10px;
+  overflow: hidden;
+}
+
+#topology-text {
+  flex: 1;
+  border-top: 1px solid #ccc;
+  padding: 8px;
+  font-size: 12px;
+  overflow-y: auto;
+}
+
+.mode-panel-content {
+  width: 100%;
+}

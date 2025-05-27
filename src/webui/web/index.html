@@ -10,16 +10,11 @@
   <div class="grid-container">
     <!-- Top Left: Test Parameters -->
     <div class="grid-item top-left">
+      <h3 class="section-title">Test</h3>
       <div class="form-row">
         <div class="form-group">
           <label for="devices">Devices:</label>
-          <select id="devices" multiple>
-            <option>HL5_1_2_Adva</option>
-            <option>HL4_5_1_Huawei</option>
-            <option>HL_Ufispace</option>
-            <option>HL_Juniper</option>
-            <option>HL_Cisco</option>
-          </select>
+          <select id="devices" multiple></select>
         </div>
       </div>
 
@@ -139,25 +134,132 @@
       </div>
     </div>
 
-    <!-- Top Right: Empty -->
-    <div class="grid-item top-right"></div>
+    <!-- Top Right -->
+    <div class="grid-item top-right">
+      <h3 class="section-title">Topology</h3>
+
+      <!-- Controles: select, file y botón -->
+      <div class="topology-controls" style="display: flex; align-items: center; gap: 12px;">
+        <label for="topology-mode" style="margin: 0;">Mode:</label>
+        <select id="topology-mode">
+          <option value="" selected disabled hidden>Select mode</option>
+          <option value="test">Test</option>
+          <option value="topology">Topology</option>
+          <option value="dynamic">Dynamic Topology</option>
+          <option value="telemetry">Telemetry</option>
+        </select>
+        <input type="file" id="topology-file" accept=".json" />
+        <button id="upload-topology">Upload</button>
+      </div>
+
+      <!-- Caja con topología y panel lateral -->
+      <div id="topology-box" style="height: 500px; display: none; background: #fefefe; border: 1px solid #ccc; border-radius: 6px; margin-top: 10px;">
+        <div id="topology" style="flex: 3; display: flex; flex-direction: column; padding: 0;">
+          <div id="topology-graph" style="flex: 4; padding: 10px;"></div>
+          <div id="topology-text" style="flex: 1; border-top: 1px solid #ccc; padding: 8px; font-size: 12px; overflow-y: auto;">
+            <!-- info panel inferior -->
+            <p style="color: gray; margin: 0;"></p>
+          </div>
+        </div>
+        <div id="mode-panel" style="flex: 1; border-left: 1px solid #ccc; padding: 20px; display: none; overflow-y: auto;">
+          <div id="panel-test" class="mode-panel-content" style="display: none; flex-direction: column; gap: 20px; height: 100%;">
+            <fieldset style="border: 1px solid #ccc; padding: 10px;">
+              <legend style="font-weight: bold;">Power Options</legend>
+              <label><input type="checkbox" id="power-toggle"> Show Power Information</label>
+            </fieldset>
+
+            <fieldset style="border: 1px solid #ccc; padding: 10px;">
+              <legend style="font-weight: bold;">Links</legend>
+              <div style="font-size: 14px;">
+                <a href="http://localhost:8087/grafana" target="_blank">Grafana</a><br>
+                <a href="http://localhost:8087/database" target="_blank">Database</a>
+              </div>
+            </fieldset>
+          </div>
+
+          <div id="panel-topology" class="mode-panel-content" style="display: none; flex-direction: column; gap: 20px; height: 100%;">
+            <!-- Power Options -->
+            <fieldset style="border: 1px solid #ccc; padding: 10px;">
+              <legend style="font-weight: bold;">Power Options</legend>
+              <label>
+                <input type="checkbox" id="show-power-toggle">
+                Show Power Information
+              </label>
+            </fieldset>
+
+            <!-- Path Calculation -->
+            <fieldset style="border: 1px solid #ccc; padding: 10px;">
+              <legend style="font-weight: bold;">Paths</legend>
+
+              <label for="source-router">Source Router</label>
+              <select id="source-router" style="width: 100%; margin-bottom: 10px;">
+                <option value="">-- Select a router --</option>
+              </select>
+
+              <label for="destination-router">Destination Router</label>
+              <select id="destination-router" style="width: 100%; margin-bottom: 10px;">
+                <option value="">-- Select a router --</option>
+              </select>
+
+              <button onclick="calculatePathPowerConsumption()" style="width: 100%; margin-bottom: 10px;">Calculate Path</button>
+
+              <label for="path-power-output">Power Consumption</label>
+              <input type="text" id="path-power-output" readonly style="width: 100%;" />
+            </fieldset>
+
+            <!-- Topology Power Calculation -->
+            <fieldset style="border: 1px solid #ccc; padding: 10px;">
+              <legend style="font-weight: bold;">Topology</legend>
+              <button onclick="calculateTopologyPowerConsumption()" style="width: 100%; margin-bottom: 10px;">Topology Power Consumption</button>
+              <input type="text" id="topology-power-output" readonly style="width: 100%;" />
+            </fieldset>
+          </div>
+
+          <div id="panel-telemetry" class="mode-panel-content" style="display: none;">
+            <p style="color: gray;">[telemetry] panel placeholder</p>
+          </div>
+
+          <div id="panel-dynamic" class="mode-panel-content" style="display: none; flex-direction: column; justify-content: space-between; height: 100%;">
+            <!-- 🔌 Power Options -->
+            <fieldset>
+              <legend style="font-weight: bold;">Power Options</legend>
+              <label><input type="checkbox" id="dynamic-power-toggle"> Show Power Information</label>
+            </fieldset>
+
+            <!-- 🌗 Day/Night Toggle -->
+            <fieldset>
+              <legend style="font-weight: bold;">Day/Night</legend>
+              <button style="width: 100%;">Switch Topology</button>
+            </fieldset>
+
+            <!-- ⚡ Topology Power -->
+            <fieldset>
+              <legend style="font-weight: bold;">Topology</legend>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button onclick="calculateTopologyPowerConsumption()" style="width: 100%;">Topology Power Consumption</button>
+                <input type="text" id="topology-power-output" readonly style="width: 100%;" />
+              </div>
+            </fieldset>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
 
     <!-- Bottom Left: WebSocket -->
     <div class="grid-item bottom-left">
+      <h3 class="section-title">Logs</h3>
       <ul id="response_test" class="scroll-box"></ul>
     </div>
 
     <!-- Bottom Right: Static data -->
     <div class="grid-item bottom-right">
+      <h3 class="section-title">Static Data</h3>
         <div class="form-group">
             <label for="devices2">Device:</label>
             <select id="devices2">
             <option value="">-- Select a device --</option>
-            <option>HL5_1_2_Adva</option>
-            <option>HL4_5_1_Huawei</option>
-            <option>HL_Ufispace</option>
-            <option>HL_Juniper</option>
-            <option>HL_Cisco</option>
             </select>
 
             <div class="table-container">
@@ -180,6 +282,10 @@
   </div>
 
   <p id="response"></p>
-  <script src="./js/scripts.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="./js/test.js"></script>
+  <script src="./js/static.js"></script>
+  <script src="./js/logs.js"></script>
+  <script src="./js/topology.js"></script>
 </body>
 </html>

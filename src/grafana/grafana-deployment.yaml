@@ -17,6 +17,9 @@ spec:
       - name: grafana-container
         image: grafana/grafana:latest
         imagePullPolicy: IfNotPresent
+        env:
+          - name: GF_SERVER_ROOT_URL
+            value: http://localhost:8087/grafana
         ports:
         - containerPort: 3000
           name: http-grafana
