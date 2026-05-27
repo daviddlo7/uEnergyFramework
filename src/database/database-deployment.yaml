@@ -11,7 +11,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: local-storage
   local:
-    path: /home/tid/uEnergyFramework/influxdb-data
+    path: /home/tfs/uEnergyFramework/influxdb-data
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -19,7 +19,7 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - energy
+          - tfs-vm
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

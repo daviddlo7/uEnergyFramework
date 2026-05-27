@@ -1207,62 +1207,62 @@ class AnalyticsStaticDB:
                     Returns: a dictionary with value None
 
             """
-            with open(filename, 'r') as file:
-                lines = file.readlines()
+        with open(filename, 'r') as file:
+            lines = file.readlines()
 
-            lines_len = len(lines)
-            i = 0
-            dict = {}
-            level_stack = []
-            salir = 0
-            in_list = 0
-            while i < lines_len:
-                jumps = 1
-                line = lines[i].strip()
-                current_dict = dict
-                for level in level_stack:
-                    current_dict = current_dict[level]
-                    if isinstance(current_dict, list):
-                        if len(current_dict) == 1:
-                            current_dict = current_dict[0]
-                            break
-                if line.startswith('container'):
-                    variable = line.split()[1]
-                    if not dict:
-                        dict[variable] = {}
-                        level_stack.append(variable)
-                    else:
-                        current_dict[variable] = {}
-                        level_stack.append(variable)
-                elif line.startswith('leaf'):
-                    variable = line.split()[1]
-                    current_dict[variable] = None
-                    while True:
-                        i += 1
-                        line = lines[i]
-                        if line.strip() == '}':
-                            if lines[i + 1].strip() == '}':
-                                salir += 1
-                            break
-                        elif 'type' in line and '{' in line and 'union' not in line:
-                            i += 3
-                elif line.startswith('list'):
-                    variable = line.split()[1]
-                    current_dict[variable] = []
-                    current_dict[variable].append({})
+        lines_len = len(lines)
+        i = 0
+        dict = {}
+        level_stack = []
+        salir = 0
+        in_list = 0
+        while i < lines_len:
+            jumps = 1
+            line = lines[i].strip()
+            current_dict = dict
+            for level in level_stack:
+                current_dict = current_dict[level]
+                if isinstance(current_dict, list):
+                    if len(current_dict) == 1:
+                        current_dict = current_dict[0]
+                        break
+            if line.startswith('container'):
+                variable = line.split()[1]
+                if not dict:
+                    dict[variable] = {}
                     level_stack.append(variable)
-                    level_stack.append(0)
-                    in_list = 1
+                else:
+                    current_dict[variable] = {}
+                    level_stack.append(variable)
+            elif line.startswith('leaf'):
+                variable = line.split()[1]
+                current_dict[variable] = None
+                while True:
+                    i += 1
+                    line = lines[i]
+                    if line.strip() == '}':
+                        if lines[i + 1].strip() == '}':
+                            salir += 1
+                        break
+                    elif 'type' in line and '{' in line and 'union' not in line:
+                        i += 3
+            elif line.startswith('list'):
+                variable = line.split()[1]
+                current_dict[variable] = []
+                current_dict[variable].append({})
+                level_stack.append(variable)
+                level_stack.append(0)
+                in_list = 1
 
-                if salir == 1:
-                    if in_list == 1:
-                        level_stack.pop()
-                        in_list = 0
+            if salir == 1:
+                if in_list == 1:
                     level_stack.pop()
-                    salir = 0
-                i += 1
+                    in_list = 0
+                level_stack.pop()
+                salir = 0
+            i += 1
 
-            return dict
+        return dict
 
     def get_static_information(self,device):
         logger_cli.info(f"TODO-inlux: Obtain static information from the device")

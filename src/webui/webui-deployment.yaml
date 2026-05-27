@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: webui-deployment
+  namespace: uenergyframework
 spec:
   replicas: 1  
   selector:
@@ -15,10 +16,12 @@ spec:
       containers:
       - name: nginx-container
         image: webui-nginx:v1
+        imagePullPolicy: Never
         ports:
         - containerPort: 80
       - name: grpc-container
         image: webui-grpc:v1
+        imagePullPolicy: Never
         ports:
         - containerPort: 50051
         - containerPort: 50052

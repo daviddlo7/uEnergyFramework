@@ -15,9 +15,9 @@ class AnalyticsClient:
         Initialize the AnalyticsClient with the server address and port.
         """
         if not host:
-            host = get_service_host(ServiceNameEnum.ANALYTICS)
+            host = get_service_host(ServiceNameEnum.EF_ANALYTICS)
         if not port:
-            port = get_service_port_grpc(ServiceNameEnum.ANALYTICS)
+            port = get_service_port_grpc(ServiceNameEnum.EF_ANALYTICS)
         
         self.endpoint = f"{host}:{port}"
         LOGGER.debug(f"Creating channel to {self.endpoint}...")

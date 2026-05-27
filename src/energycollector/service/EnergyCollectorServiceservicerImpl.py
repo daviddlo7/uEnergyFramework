@@ -696,7 +696,7 @@ class EnergyControllerMain:
             result["error"] = str(e)
             return f"Error: {result['error']}"
 
-class TestParametersEnergyCollector: # TODO Create TestParameters
+class TestParametersEnergyCollector:
     """
     Class to store the parameters used during the respective test.
 
@@ -2296,7 +2296,7 @@ class Reader:
         else:
             return 0
 
-    def     obtain_power_data(self, device_data, device_name, api_session, test_parameters):
+    def obtain_power_data(self, device_data, device_name, api_session, test_parameters):
         power_info_cli = self.cli_power_data(device_data, device_name, test_parameters)
         power_info_pdu = {}
         if device_data['pdu'] is not None:
