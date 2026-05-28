@@ -3,12 +3,7 @@ syntax = "proto3";
 package energycollector;
 
 service EnergyCollector {
-  rpc RunTest (TestRequest) returns (TestResponse);
-  rpc RunTest2 (TestParameters) returns (TestResponse);
-}
-
-message TestRequest {
-  string test_data = 1;
+  rpc RunTest (TestParameters) returns (TestResponse);
 }
 
 message TestResponse {

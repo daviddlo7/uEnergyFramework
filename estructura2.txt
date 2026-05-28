@@ -1,0 +1,101 @@
+.
+├── analytics-v1.tar
+├── deploy.sh
+├── energycollector-v1.tar
+├── estructura2.txt
+├── Files
+│   ├── Dashboard InfluxDB Final-1738926854224.json
+│   ├── Dashboard InfluxDB Pruebas-1738926903213.json
+│   ├── instantaneous_device_energy_tid_tree.txt
+│   ├── instantaneous_device_energy_tid.yang
+│   ├── static-device-energy-tid.txt
+│   ├── static_device_energy_tid.yang
+│   ├── Telemetry InfluxDB Final-1738926913864.json
+│   └── Telemetry InfluxDB Pruebas-1738926923495.json
+├── grpc_to_pods.sh
+├── influxdb-data
+│   ├── engine
+│   │   ├── data
+│   │   └── replicationq
+│   ├── influxd.bolt
+│   └── influxd.sqlite
+├── LICENSE
+├── package.json
+├── package-lock.json
+├── protoc-23.4-linux-x86_64.zip
+├── protoc-23.4-linux-x86_64.zip.1
+├── protoc-23.4-linux-x86_64.zip.2
+├── restart.sh
+├── setup_cluster.sh
+├── src
+│   ├── analytics
+│   │   ├── analytics-deployment.yaml
+│   │   ├── analytics_pb2_grpc.py
+│   │   ├── analytics_pb2.py
+│   │   ├── analytics.proto
+│   │   ├── client
+│   │   │   └── AnalyticsClient.py
+│   │   ├── Config.py
+│   │   ├── Dockerfile
+│   │   ├── __init__.py
+│   │   ├── requirements.in
+│   │   └── service
+│   │       ├── AnalyticsService.py
+│   │       ├── AnalyticsServiceservicerImpl.py
+│   │       └── __main__.py
+│   ├── configmap-uenergyframework.yaml
+│   ├── database
+│   │   └── database-deployment.yaml
+│   ├── energycollector
+│   │   ├── client
+│   │   │   └── EnergyCollectorClient.py
+│   │   ├── Config.py
+│   │   ├── Dockerfile
+│   │   ├── energycollector-deployment.yaml
+│   │   ├── energycollector_grpc_web_pb.js
+│   │   ├── energycollector_pb2_grpc.py
+│   │   ├── energycollector_pb2.py
+│   │   ├── energycollector_pb.js
+│   │   ├── energycollector.proto
+│   │   ├── __init__.py
+│   │   ├── requirements.in
+│   │   └── service
+│   │       ├── EnergyCollectorService.py
+│   │       ├── EnergyCollectorServiceservicerImpl.py
+│   │       └── __main__.py
+│   ├── grafana
+│   │   └── grafana-deployment.yaml
+│   ├── ingress.yaml
+│   ├── namespace.yaml
+│   └── webui
+│       ├── client
+│       │   └── WebUIClient.py
+│       ├── Config.py
+│       ├── Dockerfile.grpc
+│       ├── Dockerfile.nginx
+│       ├── __init__.py
+│       ├── nginx.conf
+│       ├── requirements.in
+│       ├── service
+│       │   ├── __main__.py
+│       │   ├── WebUIService.py
+│       │   └── WebUIServiceservicerImpl.py
+│       ├── web
+│       │   ├── css
+│       │   │   └── styles.css
+│       │   ├── index.html
+│       │   └── js
+│       │       ├── logs.js
+│       │       ├── scripts.js
+│       │       ├── static.js
+│       │       ├── test.js
+│       │       └── topology.js
+│       ├── webui-deployment.yaml
+│       ├── webui_pb2_grpc.py
+│       ├── webui_pb2.py
+│       └── webui.proto
+├── start_test.sh
+├── webui-grpc-v1.tar
+└── webui-nginx-v1.tar
+
+20 directories, 78 files

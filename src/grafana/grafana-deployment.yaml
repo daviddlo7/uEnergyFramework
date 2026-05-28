@@ -34,7 +34,7 @@ spec:
       volumes:
       - name: dashboards-files
         hostPath:
-          path: /home/tid/uEnergyFramework/Files
+          path: /home/tfs/uEnergyFramework/Files
           type: Directory
       - name: dashboards-provisioning
         configMap:

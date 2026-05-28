@@ -32,3 +32,10 @@ class EnergyCollectorClient:
             self.channel.close()
             self.channel = None
             self.stub = None
+            
+    @RETRY_DECORATOR
+    def RunTest(self, request: TestRequest) -> TestResult:
+        LOGGER.debug('RunTest request: %s', grpc_message_to_json_string(request))
+        response = self.stub.RunTest(request)
+        LOGGER.debug('RunTest result: %s', grpc_message_to_json_string(response))
+        return response
