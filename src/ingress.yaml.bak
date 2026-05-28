@@ -1,0 +1,39 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: uenergy-ingress
+  namespace: uenergyframework
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /webui(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: webui-nginx-service
+                port:
+                  number: 80
+            # Rewrite SOLO para WebUI
+            nginx.ingress.kubernetes.io/rewrite-target: /$2
+
+          - path: /grafana(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana-service
+                port:
+                  number: 3000
+            # SIN rewrite
+
+          - path: /database(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: database-service
+                port:
+                  number: 8086
+            # SIN rewrite
